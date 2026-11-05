@@ -415,20 +415,26 @@ def load_matches(con, seasons: dict[int, int], team_id: int | None, force: bool)
     backfill_dims(con)
 
 
-def backfill_dims(con) -> None:
-    """Fetch teams and players referenced by matches but missing from the dimension tables."""
+def backfill_dims(con, retry_skipped_players: bool = False) -> None:
+    """Fetch teams and players referenced by matches but missing from the dimension tables.
+
+    Players the API couldn't find are logged 'skipped' and normally not asked for again;
+    retry_skipped_players=True looks them up once more (the blank-row step below still applies).
+    """
+    skip_logged = "" if retry_skipped_players else \
+        "AND CAST(player_id AS VARCHAR) NOT IN (SELECT key FROM wyscout.ingest_log WHERE entity='player')"
     team_ids = [r[0] for r in con.execute("""
         SELECT DISTINCT t FROM (
             SELECT home_team_id t FROM wyscout.matches UNION SELECT away_team_id FROM wyscout.matches
             UNION SELECT team_id FROM wyscout.match_lineups)
         WHERE t IS NOT NULL AND t NOT IN (SELECT team_id FROM wyscout.teams)
           AND CAST(t AS VARCHAR) NOT IN (SELECT key FROM wyscout.ingest_log WHERE entity='team')""").fetchall()]
-    player_ids = [r[0] for r in con.execute("""
+    player_ids = [r[0] for r in con.execute(f"""
         SELECT DISTINCT player_id FROM (
             SELECT player_id FROM wyscout.match_lineups UNION SELECT player_id FROM wyscout.player_match_stats
             UNION SELECT player_id FROM wyscout.events)
         WHERE player_id IS NOT NULL AND player_id NOT IN (SELECT player_id FROM wyscout.players)
-          AND CAST(player_id AS VARCHAR) NOT IN (SELECT key FROM wyscout.ingest_log WHERE entity='player')
+          {skip_logged}
         """).fetchall()]
     print(f"backfill: {len(team_ids)} teams, {len(player_ids)} players")
 
@@ -451,6 +457,17 @@ def backfill_dims(con) -> None:
             log_rows(con, [{"entity": entity, "key": k, "status": "ok" if e is None else "skipped",
                             "http_code": error_code(e) if e else None} for k, _, e in results])
         pipeline(ids, fetch, write, batch=200, label=f"backfill {entity}s")
+
+    # The API can't always look a player up (e.g. old seasons), but anyone with match data still
+    # belongs in players, so add a row with just the id and leave every other column blank.
+    stubs = con.execute("""
+        INSERT OR IGNORE INTO wyscout.players (player_id)
+        SELECT DISTINCT player_id FROM (
+            SELECT player_id FROM wyscout.match_lineups UNION SELECT player_id FROM wyscout.player_match_stats
+            UNION SELECT player_id FROM wyscout.events)
+        WHERE player_id IS NOT NULL AND player_id NOT IN (SELECT player_id FROM wyscout.players)
+        RETURNING player_id""").fetchall()
+    print(f"backfill: {len(stubs)} players with match data but no player info kept as blank rows")
 
 
 # --- Stage: match-data (stats, events, possessions, formations) ---
@@ -617,9 +634,13 @@ def load_season_stats(con, seasons: dict[int, int], force: bool) -> None:
     for entity, table, fetch_fn, sql in (
         ("team_season_stats", "team_season_stats", api.get_team_season_stats,
          "SELECT team_id, comp_id, season_id FROM wyscout.team_seasons WHERE season_id IN (SELECT UNNEST(?))"),
+        # Rosters miss players who played in a season but aren't listed for it (or have no current
+        # team), so also request every player-season that has match stats.
         ("player_season_stats", "player_season_stats", api.get_player_season_stats,
-         "SELECT DISTINCT player_id, comp_id, season_id FROM wyscout.player_seasons "
-         "WHERE season_id IN (SELECT UNNEST(?))")):
+         "SELECT DISTINCT player_id, comp_id, season_id FROM ("
+         "SELECT player_id, comp_id, season_id FROM wyscout.player_seasons "
+         "UNION SELECT player_id, comp_id, season_id FROM wyscout.player_match_stats "
+         "WHERE player_id IS NOT NULL) WHERE season_id IN (SELECT UNNEST(?))")):
         done = set() if force else done_keys(con, entity)
         todo = [r for r in con.execute(sql, [sids]).fetchall() if f"{r[0]}:{r[2]}" not in done]
         print(f"{entity}: {len(todo)} to load")
@@ -685,6 +706,8 @@ def main() -> None:
         load_matches(con, seasons, args.team_id, args.force)
     if "match-data" in stages:
         load_match_data(con, args.force)
+    if "backfill-players" in stages:  # optional, not in the default run
+        backfill_dims(con, retry_skipped_players=True)
     if "season-stats" in stages:
         load_season_stats(con, seasons, args.force)
     if "check" in stages:

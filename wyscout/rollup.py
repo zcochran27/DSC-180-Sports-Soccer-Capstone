@@ -6,6 +6,7 @@ combines them into one row per (entity, year, term) where term is Fall or Spring
 
 Run (after wyscout.load --stages season-stats):
     python -m wyscout.rollup                 # team and player rollups + validation
+    python -m wyscout.rollup --scope player --source match   # players from per-match rows
     python -m wyscout.rollup --scope team --include-friendlies
 
 How rows are combined (columns come from the API as total_*, average_*, percent_*):
@@ -204,10 +205,24 @@ def load_season_rows(con, table: str, key: str, include_friendlies: bool) -> pd.
         WHERE t.kind IN {kinds} AND t.term <> 'Unknown'""").df()
 
 
-def run_scope(con, scope: str, include_friendlies: bool) -> pd.DataFrame:
+def load_match_rows(con, include_friendlies: bool) -> pd.DataFrame:
+    """Per-match player rows (same total_/average_/percent_ columns as season stats) with year/term.
+
+    Unlike the season-stats endpoint, this covers every player who has match data.
+    """
+    kinds = "('regular','friendly')" if include_friendlies else "('regular')"
+    return con.execute(f"""
+        SELECT t.term, t.year, s.* FROM wyscout.player_match_stats s
+        JOIN wyscout.season_terms t ON t.season_id = s.season_id AND t.comp_id = s.comp_id
+        WHERE t.kind IN {kinds} AND t.term <> 'Unknown' AND s.player_id IS NOT NULL""").df()
+
+
+def run_scope(con, scope: str, include_friendlies: bool, source: str = "season") -> pd.DataFrame:
     key, table, out_table = (("team_id", "team_season_stats", "team_term_stats") if scope == "team"
                              else ("player_id", "player_season_stats", "player_term_stats"))
-    df = load_season_rows(con, table, key, include_friendlies)
+    from_matches = scope == "player" and source == "match"
+    df = (load_match_rows(con, include_friendlies) if from_matches
+          else load_season_rows(con, table, key, include_friendlies))
     if df.empty:
         print(f"{scope}: no season stats loaded yet")
         return df
@@ -217,6 +232,9 @@ def run_scope(con, scope: str, include_friendlies: bool) -> pd.DataFrame:
     L.upsert(con, "stat_formulas", pd.DataFrame(formula_rows))
     methods = pd.Series([f["method"] for f in formulas.values()]).value_counts().to_dict()
     result = rollup(df, key, formulas)
+    if from_matches:
+        result["n_matches"] = df.groupby([key, "year", "term"], sort=False)["match_id"].nunique()             .reindex(pd.MultiIndex.from_frame(result[[key, "year", "term"]])).to_numpy()
+        con.execute(f"DELETE FROM wyscout.{out_table}")  # fully rebuilt from match rows
     L.upsert(con, out_table, result)
     print(f"{scope}: {len(df):,} season rows -> {len(result):,} {key.split('_')[0]}-terms; "
           f"{(result['n_comps'] > 1).sum():,} combine multiple competitions; methods {methods}")
@@ -250,12 +268,14 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--scope", choices=["team", "player", "both"], default="both")
     ap.add_argument("--include-friendlies", action="store_true")
+    ap.add_argument("--source", choices=["season", "match"], default="season",
+                    help="player rollup input: season-stats endpoint rows or per-match rows")
     args = ap.parse_args()
     con = L.connect()
     terms = build_season_terms(con)
     print(terms.groupby(["term", "kind"]).size().to_string())
     for scope in (["team", "player"] if args.scope == "both" else [args.scope]):
-        run_scope(con, scope, args.include_friendlies)
+        run_scope(con, scope, args.include_friendlies, args.source)
     if args.scope in ("team", "both"):
         validate_team(con, args.include_friendlies)
 
