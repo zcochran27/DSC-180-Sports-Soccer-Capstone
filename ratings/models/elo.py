@@ -1,4 +1,12 @@
-"""Elo variants: baseline, margin-of-victory (World-Football style), and xG-blended."""
+"""Elo rating models.
+
+Every team starts at 1500. Before a match the expected score of the home team is
+
+    expected = 1 / (1 + 10 ** (-gap / 400))        where gap = home rating - away rating + hfa
+
+After the match the home team gains (and the away team loses) k * (actual - expected), where
+actual is 1 for a win, 0.5 for a draw and 0 for a loss.
+"""
 from __future__ import annotations
 
 import math
@@ -6,56 +14,72 @@ from collections import defaultdict
 
 from ratings.base import RatingModel
 
+START_RATING = 1500.0
 
-def mov_multiplier(kind: str, n: int) -> float:
-    if kind == "none" or n <= 1:
+
+def margin_multiplier(kind: str, goal_margin: int) -> float:
+    """How much to scale the rating change for a win by `goal_margin` goals."""
+    if kind == "none" or goal_margin <= 1:
         return 1.0
     if kind == "sqrt":
-        return math.sqrt(n)
+        return math.sqrt(goal_margin)
     if kind == "log":
-        return math.log(n + 1) + 1.0
-    if kind == "wfe":  # eloratings.net: 1.5 for 2 goals, (11+N)/8 for 3+
-        return 1.5 if n == 2 else (11 + n) / 8
-    raise ValueError(kind)
+        return math.log(goal_margin + 1) + 1.0
+    if kind == "wfe":  # World Football Elo (eloratings.net)
+        return 1.5 if goal_margin == 2 else (11 + goal_margin) / 8
+    raise ValueError(f"unknown margin-of-victory kind: {kind}")
 
 
 class Elo(RatingModel):
-    """Elo with home advantage `hfa`, step `k`, optional MOV multiplier and xG blending.
+    """Elo with home advantage.
 
-    mov: 'none'|'sqrt'|'log'|'wfe'. xg_weight w>0 replaces the W/D/L result by
-    sigmoid(c * (w*xGdiff + (1-w)*GD)) so the update uses chance quality, not just goals.
-    autocorr damps the margin boost when the favourite wins (538-style).
-    carry: share of (rating - mean) kept across a season boundary.
+    k          size of each rating update
+    hfa        home advantage, in rating points
+    mov        margin-of-victory scaling: "none", "sqrt", "log" or "wfe"
+    xg_weight  if above 0, the "actual" score blends xG difference and goal difference
+               (see update) instead of using win/draw/loss
+    xg_c       how steeply that blended margin is turned into a 0-1 score
+    carry      share of a team's rating above/below 1500 kept when a new season starts
+    autocorr   shrink the margin bonus when the favourite wins (so strong teams do not keep climbing)
     """
 
     def __init__(self, k=20.0, hfa=60.0, mov="none", xg_weight=0.0, xg_c=1.2,
                  carry=0.75, autocorr=False, name=None):
-        self.k, self.hfa, self.mov, self.w, self.c = k, hfa, mov, xg_weight, xg_c
-        self.carry, self.autocorr = carry, autocorr
-        self.r = defaultdict(lambda: 1500.0)
-        self.name = name or f"elo_{mov}" + (f"_xg{xg_weight:g}" if xg_weight else "")
+        self.k = k
+        self.hfa = hfa
+        self.mov = mov
+        self.xg_weight = xg_weight
+        self.xg_c = xg_c
+        self.carry = carry
+        self.autocorr = autocorr
+        self.r = defaultdict(lambda: START_RATING)  # team id -> rating
+        self.name = name or f"elo_{mov}"
 
     def start_season(self, year):
-        for t in list(self.r):
-            self.r[t] = 1500.0 + self.carry * (self.r[t] - 1500.0)
+        for team in list(self.r):
+            self.r[team] = START_RATING + self.carry * (self.r[team] - START_RATING)
 
-    def gap(self, m):
-        return self.r[m.home] - self.r[m.away] + self.hfa
+    def gap(self, match):
+        return self.r[match.home] - self.r[match.away] + self.hfa
 
-    def update(self, m):
-        d = self.gap(m)
-        e = 1.0 / (1.0 + 10 ** (-d / 400.0))
-        gd = m.hg - m.ag
-        if self.w > 0 and not math.isnan(m.hxg) and not math.isnan(m.axg):
-            margin = self.w * (m.hxg - m.axg) + (1 - self.w) * gd
-            s = 1.0 / (1.0 + math.exp(-self.c * margin))
-            mult = 1.0
+    def update(self, match):
+        gap = self.gap(match)
+        expected = 1.0 / (1.0 + 10 ** (-gap / 400.0))
+        goal_diff = match.hg - match.ag
+
+        has_xg = not (math.isnan(match.hxg) or math.isnan(match.axg))
+        if self.xg_weight > 0 and has_xg:
+            # Score the match by chance quality as well as goals.
+            margin = self.xg_weight * (match.hxg - match.axg) + (1 - self.xg_weight) * goal_diff
+            actual = 1.0 / (1.0 + math.exp(-self.xg_c * margin))
+            multiplier = 1.0
         else:
-            s = 1.0 if gd > 0 else 0.5 if gd == 0 else 0.0
-            mult = mov_multiplier(self.mov, abs(gd))
-            if self.autocorr and gd != 0:
-                winner_diff = d if gd > 0 else -d
-                mult *= 2.2 / (0.001 * winner_diff + 2.2)
-        delta = self.k * mult * (s - e)
-        self.r[m.home] += delta
-        self.r[m.away] -= delta
+            actual = 1.0 if goal_diff > 0 else 0.5 if goal_diff == 0 else 0.0
+            multiplier = margin_multiplier(self.mov, abs(goal_diff))
+            if self.autocorr and goal_diff != 0:
+                winner_gap = gap if goal_diff > 0 else -gap  # how much the winner was favoured
+                multiplier *= 2.2 / (0.001 * winner_gap + 2.2)
+
+        change = self.k * multiplier * (actual - expected)
+        self.r[match.home] += change
+        self.r[match.away] -= change

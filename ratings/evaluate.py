@@ -1,16 +1,13 @@
-"""Walk-forward comparison of all team-rating models.
+"""Compare all the rating models on held-out matches.
 
     python -m ratings.evaluate --gender male
 
-Each model rates matches in time order (predict, then update). The gap->outcome mapping is fit
-on out-of-sample gaps from the training seasons (first season is burn-in) and scored on the
-last `--test-seasons` seasons. Also reports a gap-stacking ensemble and a constant baseline.
+Each model goes through the matches in date order, predicting each match before it learns the
+result. The gap -> outcome mapping is fit on the training seasons (the first season is skipped
+as burn-in) and every model is scored on the last `--test-seasons` seasons. The table also
+includes a constant "home rate" baseline and an ensemble that combines all the models.
 """
 from __future__ import annotations
-
-from dotenv import load_dotenv
-
-load_dotenv()
 
 import argparse
 
@@ -22,68 +19,95 @@ from ratings.data import load_matches
 from ratings.specs import SPECS, build
 from ratings.tune import load_best
 
+BASELINE = "baseline_home_rate"
+
 
 class Constant(RatingModel):
-    name = "baseline_home_rate"
+    """Baseline that gives every match the same gap, so it only predicts the overall home/draw/away rates."""
+    name = BASELINE
 
-    def gap(self, m):
+    def gap(self, match):
         return 0.0
 
-    def update(self, m):
+    def update(self, match):
         pass
 
 
 def default_models(gender: str | None = None, tuned: bool = True) -> list[RatingModel]:
-    """All models; uses ratings/best_params.json (from ratings.tune) for `gender` when tuned."""
+    """The baseline plus every model in SPECS, using the tuned parameters when available."""
     best = load_best(gender) if (tuned and gender) else {}
-    return [Constant()] + [build(n, best.get(n, {}).get("params")) for n in SPECS]
+    models = [Constant()]
+    for name in SPECS:
+        models.append(build(name, best.get(name, {}).get("params")))
+    return models
 
 
 def split_years(matches: pd.DataFrame, test_seasons: int):
+    """Returns (training years, test years). The first season is dropped as burn-in."""
     years = sorted(matches["year"].unique())
     if len(years) < 3:
-        raise SystemExit(f"Need >=3 seasons, found {years}")
-    test = years[-test_seasons:]
-    train = [y for y in years[1:] if y not in test]  # first season = burn-in
-    return train, test
+        raise SystemExit(f"Need at least 3 seasons, found {years}")
+    test_years = years[-test_seasons:]
+    train_years = [y for y in years[1:] if y not in test_years]
+    return train_years, test_years
+
+
+def make_ensemble(predictions: dict, train_years: list) -> pd.DataFrame:
+    """Combine the models' gaps with a linear regression on goal difference.
+
+    Each model's gap is standardised first. The weights are fit on training seasons only and are
+    saved in the result's `.attrs["coef"]`.
+    """
+    names = [name for name in predictions if name != BASELINE]
+    gaps = np.c_[[predictions[name]["gap"].values for name in names]].T  # one column per model
+
+    first = next(iter(predictions.values()))
+    goal_diff = (first["hg"] - first["ag"]).values
+    is_train = first["year"].isin(train_years).values
+
+    z_gaps = (gaps - gaps[is_train].mean(axis=0)) / (gaps[is_train].std(axis=0) + 1e-9)
+    design = np.c_[z_gaps, np.ones(len(z_gaps))]
+    coef = np.linalg.lstsq(design[is_train], goal_diff[is_train], rcond=None)[0]
+
+    ensemble = first.copy()
+    ensemble["gap"] = design @ coef
+    ensemble.attrs["coef"] = dict(zip(names, coef[:-1]))
+    return ensemble
 
 
 def evaluate(matches: pd.DataFrame, models=None, test_seasons: int = 1, return_preds: bool = False):
-    """Score every model on the test seasons. With return_preds also returns
-    ({model: walk-forward frame}, {model: fitted OutcomeMapper}, test_years)."""
+    """Score every model on the test seasons.
+
+    Returns a table (one row per model, best log loss first). With return_preds=True it also
+    returns the predictions, the fitted OutcomeMappers and the test years.
+    """
     models = models or default_models()
-    train_y, test_y = split_years(matches, test_seasons)
-    preds = {m.name: walk_forward(m, matches) for m in models}
+    train_years, test_years = split_years(matches, test_seasons)
 
-    # Ensemble: OLS of goal diff on all model gaps (fit on training seasons only).
-    names = [n for n in preds if n != "baseline_home_rate"]
-    G = np.c_[[preds[n]["gap"].values for n in names]].T
-    base = next(iter(preds.values()))
-    gd = (base["hg"] - base["ag"]).values
-    tr = base["year"].isin(train_y).values
-    Gz = (G - G[tr].mean(0)) / (G[tr].std(0) + 1e-9)
-    A = np.c_[Gz, np.ones(len(Gz))]
-    coef = np.linalg.lstsq(A[tr], gd[tr], rcond=None)[0]
-    ens = base.copy()
-    ens["gap"] = A @ coef
-    ens.attrs["coef"] = dict(zip(names, coef[:-1]))  # weights per z-scored model gap
-    preds["ensemble_ols"] = ens
+    predictions = {model.name: walk_forward(model, matches) for model in models}
+    predictions["ensemble_ols"] = make_ensemble(predictions, train_years)
 
-    rows, mappers = [], {}
-    for name, df in preds.items():
-        trn, tst = df[df["year"].isin(train_y)], df[df["year"].isin(test_y)]
-        mappers[name] = OutcomeMapper().fit(trn["gap"], trn["hg"], trn["ag"])
-        rows.append({"model": name, **score(tst, mappers[name])})
+    rows = []
+    mappers = {}
+    for name, df in predictions.items():
+        train = df[df["year"].isin(train_years)]
+        test = df[df["year"].isin(test_years)]
+        mappers[name] = OutcomeMapper().fit(train["gap"], train["hg"], train["ag"])
+        rows.append({"model": name, **score(test, mappers[name])})
     table = pd.DataFrame(rows).set_index("model").sort_values("log_loss")
-    return (table, preds, mappers, test_y) if return_preds else table
+
+    if return_preds:
+        return table, predictions, mappers, test_years
+    return table
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--gender", default="male", choices=["male", "female"])
-    ap.add_argument("--test-seasons", type=int, default=1)
-    ap.add_argument("--untuned", action="store_true", help="ignore ratings/best_params.json")
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--gender", default="male", choices=["male", "female"])
+    parser.add_argument("--test-seasons", type=int, default=1)
+    parser.add_argument("--untuned", action="store_true", help="ignore ratings/best_params.json")
+    args = parser.parse_args()
+
     matches = load_matches(args.gender)
     print(f"{len(matches)} matches, seasons {sorted(matches['year'].unique())}, "
           f"xG coverage {matches['hxg'].notna().mean():.0%}")

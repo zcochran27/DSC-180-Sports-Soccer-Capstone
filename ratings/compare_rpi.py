@@ -1,16 +1,13 @@
-"""Validate model rankings against the NCAA men's D1 RPI (full ~213-team field).
+"""Compare our team rankings with published men's D1 rankings (NCAA RPI and Shortlistr).
 
     python -m ratings.compare_rpi --model elo_xg --model dixon_coles_xg --as-of 2026-11-03
 
-Source: https://www.ncaa.com/rankings/soccer-men/d1/ncaa-mens-soccer-rpi (rankings through
-games of Nov. 3, 2026), saved in ratings/reference/. Ratings use only matches up to --as-of.
-NCAA short names are matched to Wyscout team names; unmatched schools are reported.
+The RPI is from https://www.ncaa.com/rankings/soccer-men/d1/ncaa-mens-soccer-rpi (games through
+Nov. 3, 2026). Both files are saved in ratings/reference/. Our ratings only use matches up to
+--as-of. School names are matched to Wyscout team names; schools that cannot be matched are
+printed.
 """
 from __future__ import annotations
-
-from dotenv import load_dotenv
-
-load_dotenv()
 
 import argparse
 import re
@@ -22,109 +19,162 @@ from scipy.stats import kendalltau, spearmanr
 from ratings.data import connect, load_matches
 from ratings.matchup import fit_final, rankings
 
-REF_DIR = Path(__file__).parent / "reference"
-REFS = {  # name -> csv with columns rank, school
-    "rpi": REF_DIR / "ncaa_rpi_men_2026-11-03.csv",
-    "shortlistr": REF_DIR / "shortlistr_men_2026fall.csv",
+REFERENCE_DIR = Path(__file__).parent / "reference"
+REFERENCES = {  # name -> csv file with columns: rank, school
+    "rpi": REFERENCE_DIR / "ncaa_rpi_men_2026-11-03.csv",
+    "shortlistr": REFERENCE_DIR / "shortlistr_men_2026fall.csv",
+}
+REFS = REFERENCES  # the notebook imports this name
+
+# Short forms that appear in school names. Expanded on both sides before comparing.
+ABBREVIATIONS = {"st": "state", "fla": "florida", "ga": "georgia", "col": "college", "ky": "kentucky",
+                 "ill": "illinois", "ind": "indiana", "ark": "arkansas", "conn": "connecticut",
+                 "mich": "michigan", "mich.": "michigan", "n": "north", "s": "south"}
+
+# School name in the ranking -> start of the team name in Wyscout.
+# Only needed where the two names are too different to match automatically.
+ALIASES = {
+    "boston u": "boston university",
+    "boston university": "boston",
+    "cal state bakersfield": "csu bakersfield",
+    "cal state fullerton": "cal st fullerton",
+    "cal state northridge": "csun",
+    "central conn st": "ccsu",
+    "central conn state": "central connecticut",
+    "central connecticut": "ccsu",
+    "col of charleston": "charleston",
+    "east tennessee state": "etsu",
+    "etsu": "east tennessee",
+    "fdu": "fairleigh dickinson",
+    "fgcu": "florida gulf coast",
+    "fla atlantic": "fau",
+    "florida atlantic": "fau",
+    "florida gulf coast": "fgcu",
+    "ga southern": "georgia southern",
+    "iu indy": "iu indianapolis",
+    "iupui": "iu indianapolis",
+    "james madison": "jmu",
+    "kansas city": "umkc",
+    "lmu ca": "loyola marymount",
+    "loyola maryland": "loyola greyhounds",
+    "loyola marymount": "lmu",
+    "massachusetts": "umass",
+    "niu": "northern illinois",
+    "northern kentucky": "nku",
+    "northern ky": "nku",
+    "purdue fort wayne": "ipfw",
+    "queens nc": "queens",
+    "saint marys": "st marys",
+    "saint marys ca": "saint marys",
+    "seattle u": "seattle",
+    "south fla": "usf",
+    "south florida": "usf",
+    "southern illinois edwardsville": "siue",
+    "southern ind": "southern indiana",
+    "st johns ny": "st johns",
+    "ualbany": "albany",
+    "uiw": "incarnate word",
+    "unc greensboro": "uncg",
+    "unc wilmington": "uncw",
+    "west florida argos": "west florida",
 }
 
-ABBREV = {"st": "state", "fla": "florida", "ga": "georgia", "col": "college", "ky": "kentucky",
-          "ill": "illinois", "ind": "indiana", "ark": "arkansas", "conn": "connecticut",
-          "mich": "michigan", "mich.": "michigan", "u": "u", "n": "north", "s": "south"}
-ALIASES = {  # NCAA short name -> Wyscout name prefix
-    "kansas city": "umkc", "ualbany": "albany", "uncw": "uncw", "unc greensboro": "uncg",
-    "ucf": "ucf", "fiu": "fiu", "uconn": "uconn", "csun": "csun", "south fla": "south florida",
-    "lmu ca": "loyola marymount", "uic": "uic", "iu indy": "iu indianapolis",
-    "fdu": "fairleigh dickinson", "njit": "njit", "vcu": "vcu", "etsu": "east tennessee",
-    "uab": "uab", "siue": "siu edwardsville", "niu": "northern illinois", "uiw": "incarnate word",
-    "fgcu": "florida gulf coast", "utrgv": "utrgv", "liu": "liu", "umbc": "umbc",
-    "st johns ny": "st johns", "queens nc": "queens", "saint marys ca": "saint marys",
-    "ga southern": "georgia southern", "central conn state": "central connecticut",
-    "northern ky": "northern kentucky", "southern ind": "southern indiana",
-    "col of charleston": "charleston", "fla atlantic": "florida atlantic",
-    "boston u": "boston university", "uc san diego": "uc san diego", "seattle u": "seattle",
-    "massachusetts": "umass", "penn": "penn", "oklahoma": "oklahoma",
-    # long-form names used by Shortlistr
-    "unc wilmington": "uncw", "east tennessee state": "etsu", "iupui": "iu indianapolis",
-    "fairleigh dickinson": "fairleigh dickinson", "james madison": "jmu", "cal state northridge": "csun",
-    "cal state bakersfield": "csu bakersfield", "cal state fullerton": "cal st fullerton",
-    "florida gulf coast": "fgcu", "loyola marymount": "lmu", "umass": "umass",
-    "saint marys": "st marys", "west florida argos": "west florida", "boston university": "boston",
-    "northern illinois": "northern illinois", "niu": "northern illinois", "florida atlantic": "fau",
-    "fla atlantic": "fau", "south florida": "usf", "south fla": "usf", "central connecticut": "ccsu",
-    "central conn st": "ccsu", "northern kentucky": "nku", "northern ky": "nku",
-    "purdue fort wayne": "ipfw", "loyola maryland": "loyola greyhounds",
-    "southern illinois edwardsville": "siue", "siue": "siue", "loyola marymount": "lmu",
-}
 
-
-def norm(s: str, expand: bool = True) -> str:
-    s = s.lower().replace("&", "and")
-    s = re.sub(r"[().'`]", "", s)
-    s = re.sub(r"-", " ", s)
-    toks = [(ABBREV.get(t, t) if expand else t) for t in s.split()]
-    return " ".join(toks)
+def normalize(name: str, expand: bool = True) -> str:
+    """Lowercase a school name, drop punctuation, and (optionally) spell out abbreviations."""
+    name = name.lower().replace("&", "and")
+    name = re.sub(r"[().'`]", "", name)
+    name = name.replace("-", " ")
+    words = name.split()
+    if expand:
+        words = [ABBREVIATIONS.get(word, word) for word in words]
+    return " ".join(words)
 
 
 def match_teams(schools: list[str], teams: pd.DataFrame) -> dict:
-    """school -> team_id. Candidates share a token prefix with the school; ties go to the
-    name with fewest tokens, then the most matches played this season."""
-    teams = teams.assign(n=teams["name"].map(norm))  # abbreviations expanded on both sides
-    out = {}
-    for sch in schools:
-        key = norm(ALIASES.get(norm(sch, expand=False), sch))
-        cands = teams[teams["n"].map(lambda n: n == key or n.startswith(key + " "))]
-        if cands.empty:
+    """Match each school name to a team id. Returns {school: team_id}; unmatched schools are left out.
+
+    A Wyscout team is a candidate when its name equals the school name or starts with it
+    (e.g. "duke" matches "duke blue devils"). If several teams are candidates we pick the one
+    with the fewest words, then the one that played the most matches this season.
+    """
+    teams = teams.assign(clean_name=teams["name"].map(normalize))
+    matched = {}
+    for school in schools:
+        key = normalize(ALIASES.get(normalize(school, expand=False), school))
+        is_candidate = teams["clean_name"].map(lambda n: n == key or n.startswith(key + " "))
+        candidates = teams[is_candidate]
+        if candidates.empty:
             continue
-        cands = cands.assign(k=cands["n"].str.split().str.len()).sort_values(["k", "played"], ascending=[True, False])
-        out[sch] = int(cands.iloc[0]["team_id"])
-    return out
+        candidates = candidates.assign(n_words=candidates["clean_name"].str.split().str.len())
+        best = candidates.sort_values(["n_words", "played"], ascending=[True, False]).iloc[0]
+        matched[school] = int(best["team_id"])
+    return matched
 
 
 def compare(model_name: str, as_of: str, year: int, matches: pd.DataFrame | None = None, con=None,
             ref: str = "rpi"):
+    """Rank teams with `model_name` using matches up to `as_of` and compare with the reference.
+
+    Returns (table of reference rank vs our rank, dict of summary numbers).
+    """
     matches = load_matches("male") if matches is None else matches
     matches = matches[matches["date"] <= pd.Timestamp(as_of) + pd.Timedelta(days=1)].reset_index(drop=True)
     con = con or connect()
-    played = pd.concat([matches.loc[matches.year == year, "home"], matches.loc[matches.year == year, "away"]]).value_counts()
+
+    # Teams that played this season, with how many matches they played (used to break name ties).
+    this_year = matches[matches["year"] == year]
+    played = pd.concat([this_year["home"], this_year["away"]]).value_counts()
     teams = con.execute("SELECT team_id, name FROM wyscout.teams WHERE gender = 'male'").df()
-    teams = teams[teams["team_id"].isin(played.index)].assign(played=lambda d: d["team_id"].map(played))
-    rpi = pd.read_csv(REFS[ref])
-    ids = match_teams(rpi["school"].tolist(), teams)
-    rpi["team_id"] = rpi["school"].map(ids)
+    teams = teams[teams["team_id"].isin(played.index)]
+    teams = teams.assign(played=teams["team_id"].map(played))
+
+    reference = pd.read_csv(REFERENCES[ref])
+    reference["team_id"] = reference["school"].map(match_teams(reference["school"].tolist(), teams))
+
     model, _, _ = fit_final("male", model_name, matches)
-    rk = rankings(model, matches, {}, year)
-    rk["model_rank"] = range(1, len(rk) + 1)
-    out = rpi.merge(rk[["team_id", "strength", "model_rank"]], on="team_id", how="left")
-    ok = out.dropna(subset=["model_rank"])
-    stats = {
-        "ref": ref, "model": model_name, "ref_teams": len(rpi), "matched": len(ok),
-        "spearman": spearmanr(ok["rank"], ok["model_rank"])[0],
-        "kendall": kendalltau(ok["rank"], ok["model_rank"])[0],
-        "top10_overlap": len(set(ok.nsmallest(10, "rank")["team_id"]) & set(ok.nsmallest(10, "model_rank")["team_id"])),
-        "top25_overlap": len(set(ok.nsmallest(25, "rank")["team_id"]) & set(ok.nsmallest(25, "model_rank")["team_id"])),
-        "mean_abs_rank_diff": (ok["rank"] - ok["model_rank"]).abs().mean(),
+    ours = rankings(model, matches, {}, year)
+    ours["model_rank"] = range(1, len(ours) + 1)
+
+    table = reference.merge(ours[["team_id", "strength", "model_rank"]], on="team_id", how="left")
+    found = table.dropna(subset=["model_rank"])
+    top10_ref = set(found.nsmallest(10, "rank")["team_id"])
+    top10_ours = set(found.nsmallest(10, "model_rank")["team_id"])
+    top25_ref = set(found.nsmallest(25, "rank")["team_id"])
+    top25_ours = set(found.nsmallest(25, "model_rank")["team_id"])
+    summary = {
+        "ref": ref,
+        "model": model_name,
+        "ref_teams": len(reference),
+        "matched": len(found),
+        "spearman": spearmanr(found["rank"], found["model_rank"])[0],
+        "kendall": kendalltau(found["rank"], found["model_rank"])[0],
+        "top10_overlap": len(top10_ref & top10_ours),
+        "top25_overlap": len(top25_ref & top25_ours),
+        "mean_abs_rank_diff": (found["rank"] - found["model_rank"]).abs().mean(),
     }
-    return out, stats
+    return table, summary
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--model", action="append")
-    ap.add_argument("--as-of", default="2026-11-03")
-    ap.add_argument("--year", type=int, default=2026, help="season year of the reference snapshot")
-    ap.add_argument("--ref", action="append", choices=list(REFS), help="default: all")
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", action="append", help="can be given more than once")
+    parser.add_argument("--as-of", default="2026-11-03")
+    parser.add_argument("--year", type=int, default=2026, help="season year of the reference ranking")
+    parser.add_argument("--ref", action="append", choices=list(REFERENCES), help="default: all")
+    args = parser.parse_args()
+
     pd.set_option("display.width", 200)
     matches = load_matches("male")
     print("data through", matches["date"].max())
-    rows = []
-    for ref in args.ref or list(REFS):
-        for name in args.model or ["elo_xg", "dixon_coles_xg"]:
-            out, stats = compare(name, args.as_of, args.year, matches, ref=ref)
-            rows.append(stats)
-        print(f"[{ref}] unmatched:", out.loc[out.team_id.isna(), "school"].tolist())
-    print(pd.DataFrame(rows).round(3).to_string(index=False))
+
+    summaries = []
+    for ref in args.ref or list(REFERENCES):
+        for model_name in args.model or ["elo_xg", "dixon_coles_xg"]:
+            table, summary = compare(model_name, args.as_of, args.year, matches, ref=ref)
+            summaries.append(summary)
+        print(f"[{ref}] unmatched:", table.loc[table.team_id.isna(), "school"].tolist())
+    print(pd.DataFrame(summaries).round(3).to_string(index=False))
 
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ How rows are combined (columns come from the API as total_*, average_*, percent_
              pair comes from column names (successful_X / X, X_won / X, ...) and is kept only if
              it reproduces the API's own percentages on the data; otherwise the percent falls
              back to a mean weighted by its own denominator (matches played if unknown). Chosen methods are written to
-             wyscout.stat_formulas so nothing is hidden.
+             wyscout.stat_formulas so you can see which was used for each column.
 
 Season name -> (year, term): "2025 Fall", "Spring 2021" use the name. Plain years ("2019") are
 classed by the season's dates (ends by June = Spring, starts July or later = Fall, else Full).
@@ -61,7 +61,7 @@ PCT_OVERRIDES = {"shots_on_target": ("shots_on_target", "shots"),
 MIN_FIT = 0.95
 
 
-# ── Season name -> year / term ────────────────────────────────────────────────
+# --- Season name -> year / term ---
 
 def parse_season(name: str, start, end) -> dict:
     """Return year, term (Fall/Spring/Full), kind (regular/friendly/cancelled), term_source."""
@@ -95,7 +95,7 @@ def build_season_terms(con) -> pd.DataFrame:
     return out
 
 
-# ── Formula discovery ─────────────────────────────────────────────────────────
+# --- Formula discovery ---
 
 def _num(df: pd.DataFrame, col: str) -> np.ndarray:
     return pd.to_numeric(df[col], errors="coerce").to_numpy(float) if col in df else np.full(len(df), np.nan)
@@ -162,7 +162,7 @@ def discover_percents(df: pd.DataFrame) -> dict[str, dict]:
     return out
 
 
-# ── Rollup ────────────────────────────────────────────────────────────────────
+# --- Rollup ---
 
 def rollup(df: pd.DataFrame, key: str, formulas: dict[str, dict]) -> pd.DataFrame:
     """df: season-stat rows with year/term/comp_id; returns one row per (key, year, term)."""
@@ -213,8 +213,8 @@ def run_scope(con, scope: str, include_friendlies: bool) -> pd.DataFrame:
         return df
     d = exposure(df)
     formulas = {**discover_averages(df, d), **discover_percents(df)}
-    log_rows = [{"scope": scope, "stat": c, **{k: v for k, v in f.items()}} for c, f in formulas.items()]
-    L.upsert(con, "stat_formulas", pd.DataFrame(log_rows).rename(columns={"stat": "stat_col"}))
+    formula_rows = [{"scope": scope, "stat_col": col, **formula} for col, formula in formulas.items()]
+    L.upsert(con, "stat_formulas", pd.DataFrame(formula_rows))
     methods = pd.Series([f["method"] for f in formulas.values()]).value_counts().to_dict()
     result = rollup(df, key, formulas)
     L.upsert(con, out_table, result)
@@ -223,7 +223,7 @@ def run_scope(con, scope: str, include_friendlies: bool) -> pd.DataFrame:
     return result
 
 
-# ── Validation ────────────────────────────────────────────────────────────────
+# --- Validation ---
 
 def validate_team(con, include_friendlies: bool = False) -> None:
     """Compare rolled-up team totals against sums of the per-match rows already loaded."""

@@ -73,7 +73,7 @@ def call_api(path: str, params: dict | None = None, attempts: int = 4) -> dict:
     raise WyscoutError(f"{url} failed after {attempts} attempts: {last}")
 
 
-# ── Competitions & seasons ────────────────────────────────────────────────────
+# --- Competitions & seasons ---
 
 def get_competitions(gender: str | None = None) -> pd.DataFrame:
     """All USA competitions on the account. gender: None, "male" or "female"."""
@@ -105,7 +105,7 @@ def get_seasons(comp_ids) -> pd.DataFrame:
     return seasons
 
 
-# ── Matches ───────────────────────────────────────────────────────────────────
+# --- Matches ---
 
 def get_season_matches(season_id: int) -> pd.DataFrame:
     """Fixture list for a season (label, date, status, ...). Fast: one request."""
@@ -153,7 +153,7 @@ def get_match_formations(match_id: int) -> dict:
     return call_api(f"/matches/{int(match_id)}/formations", {"fetch": "teams,players"})
 
 
-# ── Dimensions: teams, players, rounds ────────────────────────────────────────
+# --- Dimensions: teams, players, rounds ---
 
 def get_season_teams(season_id: int) -> list[dict]:
     """Teams that played at least one match in the season (raw team dicts)."""
@@ -192,7 +192,7 @@ def get_round(round_id: int) -> dict:
     return call_api(f"/rounds/{int(round_id)}")
 
 
-# ── Stats ─────────────────────────────────────────────────────────────────────
+# --- Stats ---
 
 def _flatten_stats(payload: dict, ids: dict) -> dict:
     """Flatten Wyscout's {total, average, percent} blocks into total_x / average_x / percent_x."""
@@ -247,7 +247,7 @@ def get_player_season_stats(player_id: int, comp_id: int, season_id: int) -> pd.
                                               "seasonId": int(season_id)})])
 
 
-# ── Events ────────────────────────────────────────────────────────────────────
+# --- Events ---
 
 def get_match_events(match_id: int) -> pd.DataFrame:
     """Every event in a match, flattened: one row per event.
@@ -265,7 +265,7 @@ def get_match_events(match_id: int) -> pd.DataFrame:
     return events.sort_values(sort_cols).reset_index(drop=True)
 
 
-# ── Demo ──────────────────────────────────────────────────────────────────────
+# --- Demo ---
 
 if __name__ == "__main__":
     pd.set_option("display.width", 160)

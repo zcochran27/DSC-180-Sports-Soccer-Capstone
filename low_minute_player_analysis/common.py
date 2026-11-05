@@ -31,7 +31,7 @@ from scipy.stats import spearmanr
 
 load_dotenv()
 
-# ── Settings ──────────────────────────────────────────────────────────────────
+# --- Settings ---
 
 # Stats (without the total_ prefix) we track for each position group.
 STAT_COLS = {
@@ -89,7 +89,7 @@ BUCKET_LABELS = ["0-250", "250-500", "500-900", "900+"]
 MIN_TARGET_MINUTES = 600
 
 
-# ── Loading data ──────────────────────────────────────────────────────────────
+# --- Loading data ---
 
 def connect() -> duckdb.DuckDBPyConnection:
     """Open a MotherDuck connection using MOTHERDUCK_TOKEN / MOTHERDUCK_DB from .env."""
@@ -150,7 +150,7 @@ def load_player_matches(con, gender: str, role: str) -> pd.DataFrame:
     return con.execute(sql).df()
 
 
-# ── Per-90 rates and the evaluation pairs ─────────────────────────────────────
+# --- Per-90 rates and the evaluation pairs ---
 
 def per90(df: pd.DataFrame, role: str) -> pd.DataFrame:
     """Return a frame of per-90 rates (one column per stat, no total_ prefix)."""
@@ -176,7 +176,7 @@ def make_next_year_pairs(df: pd.DataFrame, role: str) -> pd.DataFrame:
     return pairs[pairs["next_minutes"] >= MIN_TARGET_MINUTES].reset_index(drop=True)
 
 
-# ── Scoring ───────────────────────────────────────────────────────────────────
+# --- Scoring ---
 
 def minute_bucket(minutes: pd.Series) -> pd.Series:
     """Label each player with the minute bucket they fall in."""
@@ -214,7 +214,7 @@ def split_pairs(pairs: pd.DataFrame, role: str) -> tuple[pd.DataFrame, pd.DataFr
     return raw, target, pairs["minutes"]
 
 
-# ── One tactical group, ready to use ──────────────────────────────────────────
+# --- One tactical group, ready to use ---
 
 @dataclass
 class GroupData:

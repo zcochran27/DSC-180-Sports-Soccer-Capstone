@@ -35,7 +35,7 @@ N_DRAWS = 8  # random replays per player-season per level
 N_NEIGHBORS = 30
 
 
-# ── 1. Build the training examples ────────────────────────────────────────────
+# --- 1. Build the training examples ---
 
 def simulate_low_minutes(matches: pd.DataFrame, role: str, levels: list[int] = SIM_LEVELS,
                          n_draws: int = N_DRAWS, seed: int = 0) -> pd.DataFrame:
@@ -70,7 +70,7 @@ def simulate_low_minutes(matches: pd.DataFrame, role: str, levels: list[int] = S
     return pd.DataFrame(rows, columns=names)
 
 
-# ── 2. Fit one model per minute bin ───────────────────────────────────────────
+# --- 2. Fit one model per minute bin ---
 
 def fit_models(sim: pd.DataFrame, role: str) -> dict:
     """Fit a nearest-neighbour model for each minute bin.
@@ -90,7 +90,7 @@ def fit_models(sim: pd.DataFrame, role: str) -> dict:
     return models
 
 
-# ── 3. Predict ────────────────────────────────────────────────────────────────
+# --- 3. Predict ---
 
 def predict(models: dict, rates: pd.DataFrame, minutes: pd.Series) -> pd.DataFrame:
     """Estimate full-season per-90 for players below FULL_SEASON_MINUTES; keep the rest as is."""
@@ -119,7 +119,7 @@ def cross_fitted_predict(sim: pd.DataFrame, rates: pd.DataFrame, minutes: pd.Ser
     return out
 
 
-# ── Quick self-check ──────────────────────────────────────────────────────────
+# --- Quick self-check ---
 
 def main() -> None:
     role = "FW"

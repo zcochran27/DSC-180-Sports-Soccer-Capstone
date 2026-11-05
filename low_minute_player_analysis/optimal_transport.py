@@ -30,14 +30,14 @@ from . import common
 REFERENCE_MINUTES = 900  # players with at least this many minutes define the reference
 
 
-# ── Reference distribution ────────────────────────────────────────────────────
+# --- Reference distribution ---
 
 def fit_reference(rates: pd.DataFrame, minutes: pd.Series) -> pd.DataFrame:
     """Per-90 rates of the players with enough minutes to be trusted."""
     return rates[minutes >= REFERENCE_MINUTES]
 
 
-# ── 1-D transport (one stat at a time) ────────────────────────────────────────
+# --- 1-D transport (one stat at a time) ---
 
 def transport_1d(values: pd.Series, reference: pd.Series) -> pd.Series:
     """Replace each value with the reference value at the same percentile."""
@@ -45,7 +45,7 @@ def transport_1d(values: pd.Series, reference: pd.Series) -> pd.Series:
     return pd.Series(np.quantile(reference, percentile), index=values.index)
 
 
-# ── Multi-stat transport (Sinkhorn) ───────────────────────────────────────────
+# --- Multi-stat transport (Sinkhorn) ---
 
 def sinkhorn_coupling(low: np.ndarray, ref: np.ndarray, reg: float) -> np.ndarray:
     """How much of each low-minute player is sent to each reference player.
@@ -77,7 +77,7 @@ def transport_sinkhorn(group: pd.DataFrame, reference: pd.DataFrame, reg: float 
                         index=group.index, columns=group.columns)
 
 
-# ── Apply to every low-minute bucket ──────────────────────────────────────────
+# --- Apply to every low-minute bucket ---
 
 def transport_low_minutes(rates: pd.DataFrame, minutes: pd.Series, reference: pd.DataFrame,
                           how: str = "1d", reg: float = 0.05) -> pd.DataFrame:
@@ -100,7 +100,7 @@ def transport_low_minutes(rates: pd.DataFrame, minutes: pd.Series, reference: pd
     return out
 
 
-# ── Quick self-check ──────────────────────────────────────────────────────────
+# --- Quick self-check ---
 
 def main() -> None:
     group = "Center Forwards"

@@ -1,9 +1,12 @@
-"""Shared interface, outcome mapping and walk-forward evaluation for rating models.
+"""Shared pieces for every rating model: the model interface, the walk-forward runner,
+the mapping from rating gap to match outcomes, and the scoring metrics.
 
-Every model exposes `gap(m)`: pre-match strength of home minus away (home advantage included,
-native units) and `update(m)` to absorb the result. `OutcomeMapper` turns a gap into W/D/L
-probabilities (ordered logit) and an expected goal difference (linear), so all models are
-scored on the same footing.
+Every model has two methods:
+    gap(match)    -> home strength minus away strength before the match (home advantage included)
+    update(match) -> learn from the result of the match
+
+Because all models produce a "gap", we can turn any of them into win/draw/loss probabilities
+with the same OutcomeMapper and score them all the same way.
 """
 from __future__ import annotations
 
@@ -18,25 +21,31 @@ from scipy.special import expit
 class RatingModel:
     name = "base"
 
-    def start_season(self, year: int) -> None:  # called when the season year changes
-        pass
+    def start_season(self, year: int) -> None:
+        """Called when the first match of a new season is reached. Most models regress ratings here."""
 
-    def gap(self, m) -> float:  # m is a namedtuple row from itertuples()
+    def gap(self, match) -> float:
+        """`match` is one row from matches.itertuples()."""
         raise NotImplementedError
 
-    def update(self, m) -> None:
+    def update(self, match) -> None:
         raise NotImplementedError
 
 
 def walk_forward(model: RatingModel, matches: pd.DataFrame) -> pd.DataFrame:
-    """Predict each match from pre-match state, then update. Returns gaps (no look-ahead)."""
-    gaps, last_year = [], None
-    for m in matches.itertuples(index=False):
-        if m.year != last_year:
-            model.start_season(m.year)
-            last_year = m.year
-        gaps.append(model.gap(m))
-        model.update(m)
+    """Go through matches in date order, record the model's gap *before* each match, then update.
+
+    Recording the gap before updating means the model never sees a result it is predicting.
+    """
+    gaps = []
+    last_year = None
+    for match in matches.itertuples(index=False):
+        if match.year != last_year:
+            model.start_season(match.year)
+            last_year = match.year
+        gaps.append(model.gap(match))
+        model.update(match)
+
     out = matches[["match_id", "year", "date", "home", "away", "hg", "ag", "hxg", "axg"]].copy()
     out["gap"] = gaps
     return out
@@ -44,56 +53,84 @@ def walk_forward(model: RatingModel, matches: pd.DataFrame) -> pd.DataFrame:
 
 @dataclass
 class OutcomeMapper:
-    """gap -> P(home win/draw/away win) via ordered logit, and gap -> expected goal diff."""
+    """Turns a rating gap into outcome probabilities and an expected goal difference.
+
+    Probabilities use an ordered logit: a larger gap makes a home win more likely, and a draw
+    happens when the latent result falls inside a band of half-width `cut` around zero.
+    The expected goal difference is a straight line: slope * gap + intercept.
+    """
     beta: float = 1.0
-    cut: float = 0.5  # half-width of the draw band on the latent scale
+    cut: float = 0.5
     slope: float = 0.0
     intercept: float = 0.0
 
-    def fit(self, gap, hg, ag) -> "OutcomeMapper":
-        gap, gd = np.asarray(gap, float), np.asarray(hg, float) - np.asarray(ag, float)
-        s = gap.std() or 1.0
-        z = gap / s
-        res = np.sign(gd)
+    def fit(self, gap, home_goals, away_goals) -> "OutcomeMapper":
+        gap = np.asarray(gap, float)
+        goal_diff = np.asarray(home_goals, float) - np.asarray(away_goals, float)
+        result = np.sign(goal_diff)  # 1 = home win, 0 = draw, -1 = away win
 
-        def nll(p):
-            b, c = p[0], np.exp(p[1])
-            ph = expit(b * z - c)  # P(home win) = P(latent > c)
-            pa = expit(-b * z - c)
-            pd_ = np.clip(1 - ph - pa, 1e-9, 1)
-            pr = np.where(res > 0, ph, np.where(res < 0, pa, pd_))
-            return -np.log(np.clip(pr, 1e-12, 1)).sum()
+        # Work with a standardised gap so the optimiser starts from sensible numbers.
+        spread = gap.std() or 1.0
+        z = gap / spread
 
-        r = minimize(nll, [1.0, np.log(0.5)], method="Nelder-Mead")
-        self.beta, self.cut = r.x[0] / s, float(np.exp(r.x[1]))
-        A = np.c_[gap, np.ones_like(gap)]
-        self.slope, self.intercept = np.linalg.lstsq(A, gd, rcond=None)[0]
+        def negative_log_likelihood(params):
+            beta, cut = params[0], np.exp(params[1])  # exp keeps the cut positive
+            p_home = expit(beta * z - cut)
+            p_away = expit(-beta * z - cut)
+            p_draw = np.clip(1 - p_home - p_away, 1e-9, 1)
+            p_actual = np.where(result > 0, p_home, np.where(result < 0, p_away, p_draw))
+            return -np.log(np.clip(p_actual, 1e-12, 1)).sum()
+
+        best = minimize(negative_log_likelihood, [1.0, np.log(0.5)], method="Nelder-Mead")
+        self.beta = best.x[0] / spread
+        self.cut = float(np.exp(best.x[1]))
+
+        # Expected goal difference: least-squares line through (gap, goal difference).
+        design = np.c_[gap, np.ones_like(gap)]
+        self.slope, self.intercept = np.linalg.lstsq(design, goal_diff, rcond=None)[0]
         return self
 
     def probs(self, gap) -> np.ndarray:
+        """One row per gap: [P(home win), P(draw), P(away win)]."""
         gap = np.asarray(gap, float)
-        ph = expit(self.beta * gap - self.cut)
-        pa = expit(-self.beta * gap - self.cut)
-        return np.c_[ph, np.clip(1 - ph - pa, 0, 1), pa]
+        p_home = expit(self.beta * gap - self.cut)
+        p_away = expit(-self.beta * gap - self.cut)
+        p_draw = np.clip(1 - p_home - p_away, 0, 1)
+        return np.c_[p_home, p_draw, p_away]
 
     def exp_gd(self, gap) -> np.ndarray:
+        """Expected goal difference (home minus away)."""
         return self.slope * np.asarray(gap, float) + self.intercept
 
 
-def score(df: pd.DataFrame, mapper: OutcomeMapper) -> dict:
-    """Log loss, RPS, Brier, accuracy, and goal-diff / xG-diff errors for a predictions frame."""
-    p = mapper.probs(df["gap"].values)
-    gd = (df["hg"] - df["ag"]).values
-    y = np.where(gd > 0, 0, np.where(gd == 0, 1, 2))
-    oh = np.eye(3)[y]
-    ll = -np.log(np.clip(p[np.arange(len(y)), y], 1e-12, 1)).mean()
-    rps = (((np.cumsum(p, 1) - np.cumsum(oh, 1))[:, :2]) ** 2).sum(1).mean() / 2
-    brier = ((p - oh) ** 2).sum(1).mean()
-    eg = mapper.exp_gd(df["gap"].values)
-    out = {"n": len(df), "log_loss": ll, "rps": rps, "brier": brier,
-           "accuracy": (p.argmax(1) == y).mean(), "gd_mae": np.abs(eg - gd).mean(),
-           "gd_rmse": np.sqrt(((eg - gd) ** 2).mean())}
-    xd = (df["hxg"] - df["axg"]).values
-    ok = ~np.isnan(xd)
-    out["xgd_mae"] = np.abs(eg[ok] - xd[ok]).mean() if ok.any() else np.nan
-    return out
+def score(predictions: pd.DataFrame, mapper: OutcomeMapper) -> dict:
+    """Score predictions (a frame from walk_forward). Lower is better for everything except accuracy."""
+    probs = mapper.probs(predictions["gap"].values)
+    goal_diff = (predictions["hg"] - predictions["ag"]).values
+
+    # Actual result as a column index: 0 = home win, 1 = draw, 2 = away win.
+    actual = np.where(goal_diff > 0, 0, np.where(goal_diff == 0, 1, 2))
+    actual_onehot = np.eye(3)[actual]
+
+    log_loss = -np.log(np.clip(probs[np.arange(len(actual)), actual], 1e-12, 1)).mean()
+    brier = ((probs - actual_onehot) ** 2).sum(axis=1).mean()
+    # Ranked probability score: compares cumulative probabilities (home, home+draw).
+    cumulative_gap = np.cumsum(probs, axis=1) - np.cumsum(actual_onehot, axis=1)
+    rps = (cumulative_gap[:, :2] ** 2).sum(axis=1).mean() / 2
+
+    expected_gd = mapper.exp_gd(predictions["gap"].values)
+    results = {
+        "n": len(predictions),
+        "log_loss": log_loss,
+        "rps": rps,
+        "brier": brier,
+        "accuracy": (probs.argmax(axis=1) == actual).mean(),
+        "gd_mae": np.abs(expected_gd - goal_diff).mean(),
+        "gd_rmse": np.sqrt(((expected_gd - goal_diff) ** 2).mean()),
+    }
+
+    # Same comparison against xG difference, only for matches that have xG.
+    xg_diff = (predictions["hxg"] - predictions["axg"]).values
+    has_xg = ~np.isnan(xg_diff)
+    results["xgd_mae"] = np.abs(expected_gd[has_xg] - xg_diff[has_xg]).mean() if has_xg.any() else np.nan
+    return results

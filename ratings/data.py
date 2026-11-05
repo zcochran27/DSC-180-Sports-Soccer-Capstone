@@ -1,4 +1,4 @@
-"""Load regular-season matches (with optional team xG) for rating models."""
+"""Load matches from MotherDuck for the rating models."""
 from __future__ import annotations
 
 import os
@@ -7,14 +7,15 @@ import duckdb
 import pandas as pd
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv()  # reads MOTHERDUCK_TOKEN and MOTHERDUCK_DB from the .env file
 
 
 def connect() -> duckdb.DuckDBPyConnection:
-    """Open a MotherDuck connection using MOTHERDUCK_TOKEN / MOTHERDUCK_DB from .env."""
+    """Open a MotherDuck connection."""
     db = os.getenv("MOTHERDUCK_DB", "wyscout_dev")
     token = os.getenv("MOTHERDUCK_TOKEN")
     return duckdb.connect(f"md:{db}?motherduck_token={token}")
+
 
 MATCH_SQL = """
     SELECT m.match_id, m.date_utc AS date, st.year AS year, st.term AS term,
@@ -34,11 +35,12 @@ MATCH_SQL = """
 
 
 def load_matches(gender: str, con=None) -> pd.DataFrame:
-    """One row per played regular-season match for `gender` ('male'|'female'), time-ordered.
+    """One row per played regular-season match, oldest first.
 
-    `year` is the season year from season_terms; hxg/axg are NaN where team stats are missing.
+    gender is "male" or "female". Columns: home / away are team ids, hg / ag are goals,
+    hxg / axg are expected goals (NaN when the match has no team stats).
     """
     con = con or connect()
-    df = con.execute(MATCH_SQL.format(gender=gender)).df()
-    df["date"] = pd.to_datetime(df["date"])
-    return df.drop_duplicates("match_id").reset_index(drop=True)
+    matches = con.execute(MATCH_SQL.format(gender=gender)).df()
+    matches["date"] = pd.to_datetime(matches["date"])
+    return matches.drop_duplicates("match_id").reset_index(drop=True)

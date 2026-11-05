@@ -24,7 +24,7 @@ from scipy.optimize import minimize
 from . import common
 
 
-# ── Estimating k ──────────────────────────────────────────────────────────────
+# --- Estimating k ---
 
 def group_mean(rate: pd.Series, minutes: pd.Series) -> float:
     """Minutes-weighted average per-90 rate (more minutes = more weight)."""
@@ -64,7 +64,7 @@ def estimate_all_k(rates: pd.DataFrame, minutes: pd.Series) -> pd.Series:
     return pd.Series({c: estimate_k(rates[c], minutes) for c in rates.columns}, name="k")
 
 
-# ── Applying the shrinkage ────────────────────────────────────────────────────
+# --- Applying the shrinkage ---
 
 def shrink(rates: pd.DataFrame, minutes: pd.Series, k: pd.Series,
            means: pd.Series | None = None) -> pd.DataFrame:
@@ -86,7 +86,7 @@ def trust_weight(minutes: pd.Series, k: float) -> pd.Series:
     return minutes / (minutes + k)
 
 
-# ── Quick self-check ──────────────────────────────────────────────────────────
+# --- Quick self-check ---
 
 def main() -> None:
     group = "Center Forwards"

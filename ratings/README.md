@@ -14,10 +14,11 @@ models are scored on the same footing.
 | `data.py` | Loads regular-season matches (scores, team xG) from MotherDuck `wyscout.*`. Men and women are rated separately. |
 | `base.py` | `RatingModel` interface, walk-forward runner, `OutcomeMapper` (gap -> W/D/L and goal diff), scoring metrics. |
 | `models/elo.py`, `pi.py`, `glicko.py`, `batch.py` | The models. |
-| `specs.py` | Registry of model names, constructors and tuning search spaces. |
+| `specs.py` | List of model names, their classes and the settings tried when tuning. |
 | `tune.py` | Random-search hyperparameter tuning -> `best_params.json`, `tuning_log_<gender>.csv`. |
 | `evaluate.py` | Held-out comparison of all models (`python -m ratings.evaluate --gender male`). |
 | `matchup.py` | Fit a model on all data, rank teams, compare two opponents. |
+| `export_elo.py` | Write each team's pre-match Elo onto `wyscout.matches`. |
 | `compare_polls.py`, `compare_rpi.py`, `history.py` | Validation against published rankings (single snapshot / multi-year). |
 | `reference/` | Saved external rankings (coaches polls, NCAA RPI, Shortlistr). |
 | `team_ratings.ipynb` | Notebook with all tables and plots. |
@@ -169,7 +170,7 @@ Takeaways:
   `elo_sqrt` is the most balanced choice: top-2 against the Shortlistr and Final-poll references, near the
   top elsewhere, simple, explainable, and fast to update.
 * The regression-weighted ensemble over-fits (unstable weights on highly correlated inputs, including
-  negative ones); the equal-weight average is steadier and was mildly look-ahead-free.
+  negative ones); the equal-weight average is steadier.
 
 Per-year numbers: `history_results.csv`. Coaches-poll sources are saved in `reference/`.
 
@@ -193,5 +194,12 @@ python -m ratings.tune --gender male --gender female        # tune; writes best_
 python -m ratings.evaluate --gender male                    # held-out table
 python -m ratings.history                                   # multi-year validation -> history_results.csv
 python -m ratings.compare_rpi --model elo_sqrt              # NCAA RPI / Shortlistr snapshot
-py -m pytest ratings -q                                      # synthetic-data sanity tests
+python -m pytest ratings -q                                  # tests on made-up matches
 ```
+
+## Elo on the matches table
+
+`python -m ratings.export_elo` writes `home_team_elo` and `away_team_elo` (pre-match `elo_sqrt` rating, no
+result leakage) onto `wyscout.matches` for every played regular-season match; other matches stay NULL.
+`wyscout/load.py` reloads matches with INSERT OR REPLACE, which resets these columns, so re-run the export
+after loading matches. Use `--dry-run` to compute without writing.

@@ -150,8 +150,12 @@ CREATE TABLE IF NOT EXISTS matches (
     away_score          INTEGER,
     winner_team_id      BIGINT,
     has_data_available  BOOLEAN,
-    ingested_at         TIMESTAMP DEFAULT current_timestamp
+    ingested_at         TIMESTAMP DEFAULT current_timestamp,
+    home_team_elo       DOUBLE,      -- pre-match Elo (elo_sqrt), filled by `python -m ratings.export_elo`
+    away_team_elo       DOUBLE       -- reset to NULL when a match is reloaded: re-run the export
 );
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS home_team_elo DOUBLE;
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS away_team_elo DOUBLE;
 
 CREATE TABLE IF NOT EXISTS match_referees (
     match_id    BIGINT,

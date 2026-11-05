@@ -1,16 +1,12 @@
-"""Validate model rankings against the United Soccer Coaches Top 25 (ratings/reference/).
+"""Compare our team rankings with the United Soccer Coaches Top 25 (saved in ratings/reference/).
 
     python -m ratings.compare_polls --model elo_xg --model dixon_coles_xg
 
-Ratings use only matches through the poll's record date (2026-10-25), so the model sees the
-same information the coaches did. Poll source: SoccerWire's republication of the United Soccer
+Our ratings only use matches through the poll's record date (2026-10-25), so the model knows
+the same things the coaches did. The poll comes from SoccerWire's copy of the United Soccer
 Coaches polls (men's Week 10, women's Week 11).
 """
 from __future__ import annotations
-
-from dotenv import load_dotenv
-
-load_dotenv()
 
 import argparse
 from pathlib import Path
@@ -26,43 +22,50 @@ AS_OF = pd.Timestamp("2026-10-25 23:59")
 
 
 def compare(gender: str, model_name: str, matches: pd.DataFrame | None = None):
+    """Returns (table of poll rank vs our rank, dict of summary numbers)."""
     poll = pd.read_csv(POLL_PATH).query("gender == @gender")
     matches = load_matches(gender) if matches is None else matches
     matches = matches[matches["date"] <= AS_OF].reset_index(drop=True)
+
     model, _, _ = fit_final(gender, model_name, matches)
     year = int(matches["year"].max())
-    # restrict to teams that played this season, ranked by model strength
-    rk = rankings(model, matches, {}, year)
-    rk["model_rank"] = range(1, len(rk) + 1)
-    out = poll.merge(rk[["team_id", "strength", "model_rank"]], on="team_id", how="left")
-    out["rank_diff"] = out["model_rank"] - out["rank"]
-    ok = out.dropna(subset=["model_rank"])
-    stats = {
-        "model": model_name, "gender": gender, "teams_matched": len(ok), "n_ranked_teams": len(rk),
-        "spearman": spearmanr(ok["rank"], ok["model_rank"])[0],
-        "kendall": kendalltau(ok["rank"], ok["model_rank"])[0],
-        "poll_top10_in_model_top10": int((ok[ok["rank"] <= 10]["model_rank"] <= 10).sum()),
-        "poll_top25_in_model_top25": int((ok["model_rank"] <= 25).sum()),
-        "poll_top25_in_model_top50": int((ok["model_rank"] <= 50).sum()),
-        "median_model_rank_of_poll": ok["model_rank"].median(),
+    ours = rankings(model, matches, {}, year)  # every team that played this season, strongest first
+    ours["model_rank"] = range(1, len(ours) + 1)
+
+    table = poll.merge(ours[["team_id", "strength", "model_rank"]], on="team_id", how="left")
+    table["rank_diff"] = table["model_rank"] - table["rank"]
+
+    found = table.dropna(subset=["model_rank"])
+    summary = {
+        "model": model_name,
+        "gender": gender,
+        "teams_matched": len(found),
+        "n_ranked_teams": len(ours),
+        "spearman": spearmanr(found["rank"], found["model_rank"])[0],
+        "kendall": kendalltau(found["rank"], found["model_rank"])[0],
+        "poll_top10_in_model_top10": int((found[found["rank"] <= 10]["model_rank"] <= 10).sum()),
+        "poll_top25_in_model_top25": int((found["model_rank"] <= 25).sum()),
+        "poll_top25_in_model_top50": int((found["model_rank"] <= 50).sum()),
+        "median_model_rank_of_poll": found["model_rank"].median(),
     }
-    return out, stats
+    return table, summary
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--model", action="append")
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", action="append", help="can be given more than once")
+    args = parser.parse_args()
+
     pd.set_option("display.width", 200)
-    rows = []
-    for g in ("male", "female"):
-        m = load_matches(g)
-        for name in args.model or ["elo_xg", "dixon_coles_xg"]:
-            out, stats = compare(g, name, m)
-            rows.append(stats)
-            print(f"\n== {g} / {name} ==")
-            print(out[["rank", "team", "model_rank", "rank_diff", "strength"]].round(2).to_string(index=False))
-    print(pd.DataFrame(rows).round(3).to_string(index=False))
+    summaries = []
+    for gender in ("male", "female"):
+        matches = load_matches(gender)
+        for model_name in args.model or ["elo_xg", "dixon_coles_xg"]:
+            table, summary = compare(gender, model_name, matches)
+            summaries.append(summary)
+            print(f"\n== {gender} / {model_name} ==")
+            print(table[["rank", "team", "model_rank", "rank_diff", "strength"]].round(2).to_string(index=False))
+    print(pd.DataFrame(summaries).round(3).to_string(index=False))
 
 
 if __name__ == "__main__":

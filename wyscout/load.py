@@ -12,9 +12,6 @@ Examples:
 Stages run in dependency order: dims -> rosters -> matches -> match-data -> season-stats -> check.
 Every write is an upsert on the table's primary key and each fetch is recorded in ingest_log,
 so reruns skip finished work (use --force to refetch) and never duplicate rows.
-
-NOTE: response shapes for lineups, formations and season-players were taken from the OpenAPI
-spec, not from live calls. Run one season first and check the counts before a full load.
 """
 from __future__ import annotations
 
@@ -38,11 +35,11 @@ load_dotenv()
 SCHEMA_SQL = Path(__file__).with_name("schema.sql")
 STAGES = ["dims", "rosters", "matches", "match-data", "season-stats", "check"]
 WORKERS = 24
-MIN_INTERVAL = 0.09  # ~11 req/s, under the 12 req/s key limit
-BATCH = 100  # matches fetched/written per chunk
+MIN_INTERVAL = 0.09  # seconds between requests: about 11 per second, under the 12 per second limit
+BATCH = 100  # how many items to fetch and write at a time
 
 
-# ── Throttle ──────────────────────────────────────────────────────────────────
+# --- Throttle ---
 
 _lock = threading.Lock()
 _next_slot = 0.0
@@ -63,7 +60,7 @@ def _throttled_call_api(*args, **kwargs):
 api.call_api = _throttled_call_api  # all api.get_* helpers resolve call_api at call time
 
 
-# ── DuckDB helpers ────────────────────────────────────────────────────────────
+# --- DuckDB helpers ---
 
 def connect() -> duckdb.DuckDBPyConnection:
     token = os.getenv("MOTHERDUCK_TOKEN")
@@ -227,7 +224,7 @@ def date_or_none(value):
     return None if pd.isna(ts) else ts.date()
 
 
-# ── Stage: dims ───────────────────────────────────────────────────────────────
+# --- Stage: dims ---
 
 def load_dims(con) -> list[int]:
     """areas, competitions (USA, both genders), seasons. Returns all season ids."""
@@ -249,7 +246,7 @@ def load_dims(con) -> list[int]:
     return seasons["seasonId"].astype(int).tolist()
 
 
-# ── Stage: rosters (team_seasons, player_seasons, teams, players) ─────────────
+# --- Stage: rosters (team_seasons, player_seasons, teams, players) ---
 
 def _team_rows(t: dict) -> dict:
     area = t.get("area") or {}
@@ -311,7 +308,7 @@ def load_rosters(con, seasons: dict[int, int], force: bool) -> None:
     pipeline(todo, _fetch_roster, write, batch=10, label="rosters")
 
 
-# ── Stage: matches ────────────────────────────────────────────────────────────
+# --- Stage: matches ---
 
 def _person_row(p: dict, id_key: str) -> dict:
     return {id_key: p.get("wyId"), "first_name": p.get("firstName"), "last_name": p.get("lastName"),
@@ -327,14 +324,14 @@ def parse_match(raw: dict) -> dict[str, pd.DataFrame]:
     teams = raw.get("teamsData") or {}
     side = {t.get("side"): int(tid) for tid, t in teams.items()}
     home, away = side.get("home"), side.get("away")
-    hs = (teams.get(str(home)) or {}).get("score") if home else None
-    as_ = (teams.get(str(away)) or {}).get("score") if away else None
+    home_score = (teams.get(str(home)) or {}).get("score") if home else None
+    away_score = (teams.get(str(away)) or {}).get("score") if away else None
     winner = raw.get("winner")
     match = {"match_id": match_id, "comp_id": raw.get("competitionId"), "season_id": raw.get("seasonId"),
              "round_id": raw.get("roundId"), "gameweek": raw.get("gameweek"),
              "date_utc": pd.to_datetime(raw.get("dateutc"), errors="coerce"),
              "status": raw.get("status"), "duration": raw.get("duration"), "label": raw.get("label"),
-             "home_team_id": home, "away_team_id": away, "home_score": hs, "away_score": as_,
+             "home_team_id": home, "away_team_id": away, "home_score": home_score, "away_score": away_score,
              "winner_team_id": winner if winner else None,
              "has_data_available": raw.get("hasDataAvailable")}
     refs, ref_dim = [], []
@@ -350,20 +347,19 @@ def parse_match(raw: dict) -> dict[str, pd.DataFrame]:
         if t.get("coachId"):  # coachId 0/None = no coach recorded
             coaches.append({"match_id": match_id, "team_id": int(tid), "coach_id": t["coachId"]})
         formation = t.get("formation") or {}
-        subs = {s.get("playerIn"): s for s in formation.get("substitutions") or []}
-        outs = {s.get("playerOut"): s for s in formation.get("substitutions") or []}
+        substitutions = formation.get("substitutions") or []
+        subbed_in = {s.get("playerIn"): s for s in substitutions}
+        subbed_out = {s.get("playerOut"): s for s in substitutions}
         for starter, key in ((True, "lineup"), (False, "bench")):
             for p in formation.get(key) or []:
                 pid = p.get("playerId") or (p.get("player") or {}).get("wyId")
                 if pid is None:
                     continue
-                if not starter and pid not in subs:
-                    pass  # unused bench player still recorded, with no sub minutes
                 lineups.append({"match_id": match_id, "player_id": pid, "team_id": int(tid),
                                 "starter": starter, "shirt_number": p.get("shirtNumber"),
                                 "position_code": ((p.get("position") or {}).get("code")),
-                                "sub_in_min": (subs.get(pid) or {}).get("minute"),
-                                "sub_out_min": (outs.get(pid) or {}).get("minute")})
+                                "sub_in_min": (subbed_in.get(pid) or {}).get("minute"),
+                                "sub_out_min": (subbed_out.get(pid) or {}).get("minute")})
     return {"matches": pd.DataFrame([match]), "match_referees": pd.DataFrame(refs),
             "referees": pd.DataFrame(ref_dim), "match_coaches": pd.DataFrame(coaches),
             "match_lineups": pd.DataFrame(lineups)}
@@ -457,7 +453,7 @@ def backfill_dims(con) -> None:
         pipeline(ids, fetch, write, batch=200, label=f"backfill {entity}s")
 
 
-# ── Stage: match-data (stats, events, possessions, formations) ────────────────
+# --- Stage: match-data (stats, events, possessions, formations) ---
 
 STAT_RENAMES = {"competitionId": "comp_id", "matchId": "match_id", "teamId": "team_id",
                 "playerId": "player_id", "seasonId": "season_id", "roundId": "round_id"}
@@ -468,7 +464,6 @@ def parse_events(events: pd.DataFrame, match_id: int, comp_id, season_id) -> dic
     ev = snake_cols(events, {"id": "event_id", "matchPeriod": "period", "opponentTeam_id": "opponent_team_id",
                              "location_x": "loc_x", "location_y": "loc_y"})
     ev["match_id"], ev["comp_id"], ev["season_id"] = match_id, comp_id, season_id
-    poss_cols = [c for c in ev.columns if c.startswith("possession_")]
     poss = pd.DataFrame()
     if "possession_id" in ev.columns:
         first = ev[ev["possession_id"].notna()].drop_duplicates("possession_id").copy()
@@ -490,8 +485,10 @@ def parse_events(events: pd.DataFrame, match_id: int, comp_id, season_id) -> dic
             "attack_with_shot_on_goal": first.get("possession_attack_with_shot_on_goal"),
             "attack_with_goal": first.get("possession_attack_with_goal"),
             "attack_xg": first.get("possession_attack_xg")})
+        # Possession details now live in their own table; events keep only the link to it.
         keep = {"possession_id", "possession_event_index"}
-        ev = ev.drop(columns=[c for c in poss_cols if c not in keep])
+        possession_cols = [c for c in ev.columns if c.startswith("possession_")]
+        ev = ev.drop(columns=[c for c in possession_cols if c not in keep])
     tags = ev[["match_id", "event_id", "type_secondary"]].explode("type_secondary") \
         if "type_secondary" in ev.columns else pd.DataFrame()
     if not tags.empty:
@@ -578,40 +575,42 @@ def load_match_data(con, force: bool) -> None:
     print(f"match-data: {len(todo)}/{len(matches)} matches with data to load")
 
     def write(results):
-        ok = results  # every match is written with whatever parts succeeded
-        logs = []
-        if ok:
-            ids = [o["match_id"] for o in ok]
-            ps = concat([snake_cols(o["player_stats"], STAT_RENAMES) for o in ok])
-            if not ps.empty:  # player stats carry no team id: take it from the lineups
-                lineups = con.execute("SELECT match_id, player_id, team_id FROM wyscout.match_lineups "
-                                      "WHERE match_id IN (SELECT UNNEST(?))", [ids]).df()
-                ps = ps.drop(columns=["team_id"], errors="ignore").merge(lineups, on=["match_id", "player_id"], how="left")
-            upsert(con, "player_match_stats", ps)
-            upsert(con, "team_match_stats", concat([snake_cols(o["team_stats"], STAT_RENAMES) for o in ok]))
-            parts = [parse_events(o["events"], o["match_id"], o["comp_id"], o["season_id"])
-                     for o in ok if not o["events"].empty]
-            if parts:
-                events, tags = concat([p["events"] for p in parts]), concat([p["event_tags"] for p in parts])
-                types = ensure_dim(con, "dim_event_types", "type_primary", "type_id", events["type_primary"])
-                ensure_dim(con, "dim_event_tags", "tag", "tag_id", tags["tag"] if not tags.empty else [])
-                events["type_id"] = events["type_primary"].map(types)
-                con.execute("DELETE FROM wyscout.event_tags WHERE match_id IN (SELECT UNNEST(?))", [ids])
-                upsert(con, "events", events)
-                upsert(con, "event_tags", tags)
-                upsert(con, "possessions", concat([p["possessions"] for p in parts]))
-            upsert(con, "match_formations", concat([parse_formations(o["formations"], o["match_id"]) for o in ok]))
-            # 'error' is not in done_keys, so matches with a failed call are retried on the next run
-            logs += [{"entity": "match_data", "key": o["match_id"], "rows": len(o["events"]),
-                      "status": "error" if o["errors"] else "ok",
-                      "http_code": error_code(o["errors"][0]) if o["errors"] else None} for o in ok]
-        log_rows(con, logs)
+        # Every match is written with whatever parts of it were fetched successfully.
+        ids = [r["match_id"] for r in results]
+
+        player_stats = concat([snake_cols(r["player_stats"], STAT_RENAMES) for r in results])
+        if not player_stats.empty:  # player stats have no team id, so take it from the lineups
+            lineups = con.execute("SELECT match_id, player_id, team_id FROM wyscout.match_lineups "
+                                  "WHERE match_id IN (SELECT UNNEST(?))", [ids]).df()
+            player_stats = player_stats.drop(columns=["team_id"], errors="ignore")
+            player_stats = player_stats.merge(lineups, on=["match_id", "player_id"], how="left")
+        upsert(con, "player_match_stats", player_stats)
+        upsert(con, "team_match_stats", concat([snake_cols(r["team_stats"], STAT_RENAMES) for r in results]))
+
+        parsed = [parse_events(r["events"], r["match_id"], r["comp_id"], r["season_id"])
+                  for r in results if not r["events"].empty]
+        if parsed:
+            events = concat([p["events"] for p in parsed])
+            tags = concat([p["event_tags"] for p in parsed])
+            type_ids = ensure_dim(con, "dim_event_types", "type_primary", "type_id", events["type_primary"])
+            ensure_dim(con, "dim_event_tags", "tag", "tag_id", tags["tag"] if not tags.empty else [])
+            events["type_id"] = events["type_primary"].map(type_ids)
+            con.execute("DELETE FROM wyscout.event_tags WHERE match_id IN (SELECT UNNEST(?))", [ids])
+            upsert(con, "events", events)
+            upsert(con, "event_tags", tags)
+            upsert(con, "possessions", concat([p["possessions"] for p in parsed]))
+        upsert(con, "match_formations", concat([parse_formations(r["formations"], r["match_id"]) for r in results]))
+
+        # Status "error" is not in done_keys, so matches with a failed call are retried on the next run.
+        log_rows(con, [{"entity": "match_data", "key": r["match_id"], "rows": len(r["events"]),
+                        "status": "error" if r["errors"] else "ok",
+                        "http_code": error_code(r["errors"][0]) if r["errors"] else None} for r in results])
 
     pipeline(todo, _fetch_match_data, write, label="match data")
     backfill_dims(con)
 
 
-# ── Stage: season-stats ───────────────────────────────────────────────────────
+# --- Stage: season-stats ---
 
 def load_season_stats(con, seasons: dict[int, int], force: bool) -> None:
     sids = list(seasons)
@@ -639,7 +638,7 @@ def load_season_stats(con, seasons: dict[int, int], force: bool) -> None:
         pipeline(todo, fetch, write, batch=200, label=entity)
 
 
-# ── Stage: check ──────────────────────────────────────────────────────────────
+# --- Stage: check ---
 
 CHECKS = {
     "matches without season": "SELECT count(*) FROM wyscout.matches m WHERE m.season_id NOT IN (SELECT season_id FROM wyscout.seasons)",
@@ -662,7 +661,7 @@ def run_checks(con) -> None:
         print(f"  {name:32s} {con.execute(sql).fetchone()[0]}")
 
 
-# ── CLI ───────────────────────────────────────────────────────────────────────
+# --- CLI ---
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
