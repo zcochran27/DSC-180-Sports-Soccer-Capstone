@@ -1,0 +1,204 @@
+rank,school,strength
+1,"Clemson",100
+2,"Duke",100
+3,"Portland",99
+4,"Bryant",99
+5,"Stanford",98
+6,"Notre Dame",98
+7,"Indiana",97
+8,"Marshall",97
+9,"Akron",96
+10,"New Hampshire",96
+11,"Syracuse",95
+12,"Wake Forest",95
+13,"Georgetown",94
+14,"Western Michigan",94
+15,"Drexel",93
+16,"Loyola Chicago",93
+17,"James Madison",92
+18,"Dayton",92
+19,"North Carolina",91
+20,"Lipscomb",91
+21,"Hofstra",90
+22,"Xavier",90
+23,"Penn State",89
+24,"Denver",89
+25,"West Virginia",88
+26,"Cornell",88
+27,"SMU",87
+28,"Oral Roberts",87
+29,"Pittsburgh",86
+30,"Virginia",86
+31,"Missouri State",85
+32,"Charlotte",85
+33,"San Francisco",84
+34,"Yale",84
+35,"St. John's",83
+36,"Penn",83
+37,"UCLA",82
+38,"Iona",82
+39,"Providence",81
+40,"FIU",81
+41,"California",80
+42,"Marquette",80
+43,"Oregon State",79
+44,"San Diego",79
+45,"Washington",78
+46,"Rider",78
+47,"UIC",77
+48,"Fordham",77
+49,"UC Irvine",76
+50,"High Point",76
+51,"Maryland",75
+52,"Delaware",75
+53,"Saint Louis",74
+54,"Boston University",74
+55,"UCF",73
+56,"Seattle",73
+57,"Memphis",72
+58,"East Tennessee State",72
+59,"VCU",71
+60,"Lafayette",71
+61,"Michigan State",70
+62,"Ohio State",70
+63,"UMBC",69
+64,"Bowling Green",69
+65,"Vermont",68
+66,"LIU",68
+67,"Saint Mary's",67
+68,"South Florida",67
+69,"Loyola Maryland",67
+70,"Monmouth",66
+71,"Davidson",66
+72,"Wisconsin",65
+73,"Furman",65
+74,"California Baptist",64
+75,"UNLV",64
+76,"Elon",63
+77,"Bellarmine",63
+78,"Loyola Marymount",62
+79,"Saint Francis",62
+80,"Charleston",61
+81,"Wofford",61
+82,"George Mason",60
+83,"Cal State Fullerton",60
+84,"NJIT",59
+85,"Harvard",59
+86,"Louisville",58
+87,"William & Mary",58
+88,"Northwestern",57
+89,"Georgia State",57
+90,"Cal Poly",56
+91,"Green Bay",56
+92,"Stony Brook",55
+93,"Cal State Bakersfield",55
+94,"San Diego State",54
+95,"UNC Asheville",54
+96,"UC Davis",53
+97,"Fairfield",53
+98,"Bradley",52
+99,"UMass",52
+100,"Seton Hall",51
+101,"UC Santa Barbara",51
+102,"Omaha",50
+103,"Milwaukee",50
+104,"Santa Clara",49
+105,"Tulsa",49
+106,"Kentucky",48
+107,"Mercer",48
+108,"UConn",47
+109,"Cal State Northridge",47
+110,"Campbell",46
+111,"Utah Tech",46
+112,"Albany",45
+113,"Kansas City",45
+114,"Northeastern",44
+115,"American",44
+116,"UNC Wilmington",43
+117,"Sacred Heart",43
+118,"Belmont",42
+119,"Drake",42
+120,"UNC Greensboro",41
+121,"Merrimack",41
+122,"South Carolina",40
+123,"Rhode Island",40
+124,"Creighton",39
+125,"Longwood",39
+126,"La Salle",38
+127,"Wright State",38
+128,"Saint Joseph's",37
+129,"Grand Canyon",37
+130,"Evansville",36
+131,"Brown",36
+132,"Binghamton",35
+133,"Old Dominion",35
+134,"Utah Valley",34
+135,"Robert Morris",34
+136,"UT Rio Grande Valley",33
+137,"Stetson",33
+138,"Jacksonville",33
+139,"Michigan",32
+140,"Siena",32
+141,"Florida Atlantic",31
+142,"UC San Diego",31
+143,"UC Riverside",30
+144,"Manhattan",30
+145,"St. Bonaventure",29
+146,"Purdue Fort Wayne",29
+147,"Duquesne",28
+148,"Princeton",28
+149,"DePaul",27
+150,"Oakland",27
+151,"Northern Illinois",26
+152,"Marist",26
+153,"Pacific",25
+154,"Bucknell",25
+155,"Florida Gulf Coast",24
+156,"Holy Cross",24
+157,"Rutgers",23
+158,"Butler",23
+159,"San Jose State",22
+160,"Quinnipiac",22
+161,"NC State",21
+162,"IUPUI",21
+163,"Central Connecticut",20
+164,"Gardner-Webb",20
+165,"Virginia Tech",19
+166,"Dartmouth",19
+167,"Gonzaga",18
+168,"Navy",18
+169,"North Florida",17
+170,"Cleveland State",17
+171,"Georgia Southern",16
+172,"Detroit Mercy",16
+173,"George Washington",15
+174,"Colgate",15
+175,"Temple",14
+176,"Presbyterian",14
+177,"Columbia",13
+178,"Army",13
+179,"Boston College",12
+180,"Villanova",12
+181,"VMI",11
+182,"Fairleigh Dickinson",11
+183,"Central Arkansas",10
+184,"Northern Kentucky",10
+185,"Coastal Carolina",9
+186,"UAB",9
+187,"Winthrop",8
+188,"USC Upstate",8
+189,"Queens",7
+190,"Canisius",7
+191,"UMass Lowell",6
+192,"St. Thomas",6
+193,"Air Force",5
+194,"Niagara",5
+195,"Mount St. Mary's",4
+196,"Stonehill",4
+197,"Sacramento State",3
+198,"Le Moyne",3
+199,"Western Illinois",2
+200,"Lehigh",2
+201,"Saint Peter's",1
+202,"Howard",1
+203,"Radford",0

@@ -1,0 +1,200 @@
+rank,school,strength
+1,Georgetown,100
+2,SMU,99
+3,Clemson,99
+4,Washington,98
+5,Akron,98
+6,North Carolina,97
+7,Indiana,97
+8,Rutgers,96
+9,Creighton,96
+10,California Baptist,95
+11,Portland,95
+12,Wake Forest,94
+13,West Virginia,94
+14,Xavier,93
+15,Cornell,93
+16,Louisville,92
+17,Marshall,92
+18,NC State,91
+19,Charlotte,91
+20,NJIT,90
+21,Bryant,90
+22,Furman,89
+23,High Point,89
+24,Saint Louis,88
+25,Fairfield,88
+26,Stony Brook,87
+27,Elon,87
+28,Missouri State,86
+29,Oregon State,86
+30,Syracuse,85
+31,Memphis,85
+32,Michigan State,84
+33,Omaha,84
+34,UC Irvine,83
+35,Gardner-Webb,83
+36,UNC Wilmington,82
+37,Kansas City,82
+38,UConn,81
+39,South Carolina,81
+40,Wisconsin,80
+41,UCLA,80
+42,Marquette,79
+43,Utah Valley,79
+44,Albany,78
+45,UNC Greensboro,78
+46,Vermont,77
+47,UCF,77
+48,Florida Atlantic,76
+49,James Madison,76
+50,Pittsburgh,75
+51,Seton Hall,75
+52,Stanford,74
+53,UC Santa Barbara,74
+54,Maryland,73
+55,FIU,73
+56,Penn,72
+57,San Diego,72
+58,Notre Dame,71
+59,California,71
+60,Virginia Tech,70
+61,Duquesne,70
+62,Brown,69
+63,Boston University,69
+64,Hofstra,68
+65,Bellarmine,68
+66,Princeton,67
+67,Fairleigh Dickinson,67
+68,Virginia,66
+69,Evansville,66
+70,Drexel,65
+71,Marist,65
+72,Tulsa,64
+73,Old Dominion,64
+74,Ohio State,63
+75,San Francisco,63
+76,Quinnipiac,62
+77,Cleveland State,62
+78,New Hampshire,61
+79,UNC Asheville,61
+80,Wofford,60
+81,Purdue Fort Wayne,60
+82,UC San Diego,59
+83,Rhode Island,59
+84,Cal State Bakersfield,58
+85,La Salle,58
+86,George Mason,57
+87,Central Arkansas,57
+88,Dartmouth,56
+89,Yale,56
+90,Davidson,55
+91,Sacred Heart,55
+92,Fordham,54
+93,Belmont,54
+94,Columbia,53
+95,Delaware,53
+96,Michigan,52
+97,North Florida,52
+98,UAB,51
+99,Bowling Green,51
+100,Providence,50
+101,Gonzaga,50
+102,Northwestern,49
+103,Siena,49
+104,Penn State,48
+105,Milwaukee,48
+106,Liberty,47
+107,Mercyhurst,47
+108,Duke,46
+109,Charleston,46
+110,Cal Poly,45
+111,Dayton,45
+112,Stetson,44
+113,Le Moyne,44
+114,East Tennessee State,43
+115,Jacksonville,43
+116,DePaul,42
+117,UMBC,42
+118,Harvard,41
+119,Georgia Southern,41
+120,Drake,40
+121,Northern Illinois,40
+122,William & Mary,39
+123,Saint Peter's,39
+124,Cal State Northridge,38
+125,LIU,38
+126,Florida Gulf Coast,37
+127,Denver,37
+128,St. John's,36
+129,UMass Lowell,36
+130,UIC,35
+131,Robert Morris,35
+132,Kentucky,34
+133,Loyola Chicago,34
+134,Winthrop,33
+135,West Florida Argos,33
+136,Merrimack,32
+137,Wright State,32
+138,Binghamton,31
+139,Iona,31
+140,Boston College,30
+141,Rider,30
+142,UMass,29
+143,Western Michigan,29
+144,Bradley,28
+145,Central Connecticut,28
+146,Monmouth,27
+147,Lehigh,27
+148,Niagara,26
+149,Bucknell,26
+150,Butler,25
+151,St. Bonaventure,25
+152,Coastal Carolina,24
+153,Green Bay,24
+154,Longwood,23
+155,Radford,23
+156,San Diego State,22
+157,American,22
+158,Oral Roberts,21
+159,Loyola Maryland,21
+160,Santa Clara,20
+161,Holy Cross,20
+162,Georgia State,19
+163,New Haven,19
+164,St. Thomas,18
+165,Queens,18
+166,Cal State Fullerton,17
+167,VCU,17
+168,UC Riverside,16
+169,George Washington,16
+170,Saint Joseph's,15
+171,Army,15
+172,Seattle,14
+173,Oakland,14
+174,Villanova,13
+175,Colgate,13
+176,Sacramento State,12
+177,Detroit Mercy,12
+178,Northeastern,11
+179,Stonehill,11
+180,Manhattan,10
+181,Navy,10
+182,USC Upstate,9
+183,Loyola Marymount,9
+184,Saint Mary's,8
+185,IUPUI,8
+186,Temple,7
+187,Mount St. Mary's,7
+188,Northern Kentucky,6
+189,Lafayette,6
+190,South Florida,5
+191,Canisius,5
+192,Campbell,4
+193,Lipscomb,4
+194,Mercer,3
+195,Pacific,3
+196,VMI,2
+197,Howard,2
+198,Presbyterian,1
+199,Chicago State,1

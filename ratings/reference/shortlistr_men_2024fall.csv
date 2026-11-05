@@ -1,0 +1,205 @@
+rank,school,strength
+1,"Clemson",100
+2,"Dayton",100
+3,"Duke",99
+4,"Ohio State",99
+5,"Akron",98
+6,"Cornell",98
+7,"West Virginia",97
+8,"Princeton",97
+9,"Georgetown",96
+10,"Missouri State",96
+11,"Pittsburgh",95
+12,"Marshall",95
+13,"North Carolina",94
+14,"Indiana",94
+15,"St. John's",93
+16,"UMass",93
+17,"Denver",92
+18,"Kansas City",92
+19,"San Diego",91
+20,"Seattle",91
+21,"Furman",90
+22,"Hofstra",90
+23,"Wake Forest",89
+24,"Iona",89
+25,"George Mason",88
+26,"Gardner-Webb",88
+27,"Notre Dame",87
+28,"NC State",87
+29,"UCLA",86
+30,"Oregon State",86
+31,"Bowling Green",85
+32,"Vermont",85
+33,"Providence",84
+34,"High Point",84
+35,"UNC Greensboro",83
+36,"San Francisco",83
+37,"Virginia Tech",82
+38,"Bryant",82
+39,"Virginia",81
+40,"Washington",81
+41,"Stanford",80
+42,"Western Michigan",80
+43,"Creighton",79
+44,"UC Davis",79
+45,"Drake",78
+46,"Florida Atlantic",78
+47,"SMU",77
+48,"Rider",77
+49,"UCF",76
+50,"Fordham",76
+51,"New Hampshire",75
+52,"Penn",75
+53,"Robert Morris",75
+54,"Boston College",74
+55,"Portland",74
+56,"South Carolina",73
+57,"Kentucky",73
+58,"California",72
+59,"Charlotte",72
+60,"Elon",71
+61,"Saint Louis",71
+62,"Wisconsin",70
+63,"Evansville",70
+64,"UConn",69
+65,"Northeastern",69
+66,"Seton Hall",68
+67,"FIU",68
+68,"James Madison",67
+69,"UMBC",67
+70,"Wofford",66
+71,"Fairleigh Dickinson",66
+72,"Monmouth",65
+73,"Brown",65
+74,"UC Santa Barbara",64
+75,"UNC Asheville",64
+76,"Green Bay",63
+77,"Oakland",63
+78,"Drexel",62
+79,"Cal State Bakersfield",62
+80,"Omaha",61
+81,"LIU",61
+82,"Oral Roberts",60
+83,"Campbell",60
+84,"Mercer",59
+85,"Siena",59
+86,"Charleston",58
+87,"UC Irvine",58
+88,"Northwestern",57
+89,"Belmont",57
+90,"Maryland",56
+91,"UNC Wilmington",56
+92,"Cal Poly",55
+93,"Central Arkansas",55
+94,"Syracuse",54
+95,"San Diego State",54
+96,"Cleveland State",53
+97,"Sacred Heart",53
+98,"Michigan",52
+99,"Cal State Fullerton",52
+100,"Michigan State",51
+101,"Marist",51
+102,"South Florida",50
+103,"North Florida",50
+104,"Utah Valley",50
+105,"Davidson",49
+106,"Memphis",49
+107,"Louisville",48
+108,"Bucknell",48
+109,"Old Dominion",47
+110,"Purdue Fort Wayne",47
+111,"Loyola Chicago",46
+112,"Duquesne",46
+113,"Manhattan",45
+114,"Bellarmine",45
+115,"VCU",44
+116,"Milwaukee",44
+117,"Xavier",43
+118,"Delaware",43
+119,"Georgia Southern",42
+120,"UIC",42
+121,"Rutgers",41
+122,"NJIT",41
+123,"East Tennessee State",40
+124,"Santa Clara",40
+125,"William & Mary",39
+126,"La Salle",39
+127,"Temple",38
+128,"Jacksonville",38
+129,"St. Bonaventure",37
+130,"UC Riverside",37
+131,"Mercyhurst",36
+132,"Boston University",36
+133,"UNLV",35
+134,"Stonehill",35
+135,"Lehigh",34
+136,"Loyola Maryland",34
+137,"Quinnipiac",33
+138,"Saint Francis",33
+139,"DePaul",32
+140,"Wright State",32
+141,"Harvard",31
+142,"Le Moyne",31
+143,"Binghamton",30
+144,"Lafayette",30
+145,"Marquette",29
+146,"Holy Cross",29
+147,"Saint Mary's",28
+148,"American",28
+149,"Stetson",27
+150,"California Baptist",27
+151,"UMass Lowell",26
+152,"UT Rio Grande Valley",26
+153,"Dartmouth",25
+154,"Pacific",25
+155,"Tulsa",25
+156,"Butler",24
+157,"Longwood",24
+158,"UC San Diego",23
+159,"Cal State Northridge",23
+160,"Coastal Carolina",22
+161,"Presbyterian",22
+162,"UAB",21
+163,"Lipscomb",21
+164,"Detroit Mercy",20
+165,"Northern Kentucky",20
+166,"Bradley",19
+167,"San Jose State",19
+168,"Stony Brook",18
+169,"Loyola Marymount",18
+170,"Georgia State",17
+171,"Yale",17
+172,"Sacramento State",16
+173,"Canisius",16
+174,"Penn State",15
+175,"Rhode Island",15
+176,"Albany",14
+177,"Florida Gulf Coast",14
+178,"Queens",13
+179,"Utah Tech",13
+180,"Villanova",12
+181,"Colgate",12
+182,"IUPUI",11
+183,"Army",11
+184,"Grand Canyon",10
+185,"Navy",10
+186,"Columbia",9
+187,"Fairfield",9
+188,"Gonzaga",8
+189,"Merrimack",8
+190,"Saint Peter's",7
+191,"Mount St. Mary's",7
+192,"Winthrop",6
+193,"Niagara",6
+194,"Northern Illinois",5
+195,"VMI",5
+196,"Saint Joseph's",4
+197,"Chicago State",4
+198,"St. Thomas",3
+199,"George Washington",3
+200,"Howard",2
+201,"Central Connecticut",2
+202,"USC Upstate",1
+203,"Radford",1
+204,"Air Force",0

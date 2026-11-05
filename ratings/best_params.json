@@ -1,0 +1,172 @@
+{
+  "male": {
+    "elo_none": {
+      "params": {
+        "k": 60,
+        "hfa": 70,
+        "carry": 1.0
+      },
+      "val_log_loss": 0.9708384749197065
+    },
+    "elo_sqrt": {
+      "params": {
+        "k": 60,
+        "hfa": 70,
+        "carry": 0.9
+      },
+      "val_log_loss": 0.966137999568076
+    },
+    "elo_wfe_autocorr": {
+      "params": {
+        "k": 40,
+        "hfa": 70,
+        "carry": 1.0
+      },
+      "val_log_loss": 0.9663139779226656
+    },
+    "elo_xg": {
+      "params": {
+        "k": 60,
+        "hfa": 70,
+        "carry": 1.0,
+        "xg_weight": 0.5,
+        "xg_c": 1.5
+      },
+      "val_log_loss": 0.9571560405906336
+    },
+    "pi": {
+      "params": {
+        "lam": 0.1,
+        "gamma": 0.8,
+        "c": 3.0,
+        "carry": 0.8
+      },
+      "val_log_loss": 0.9734552448991567
+    },
+    "glicko": {
+      "params": {
+        "hfa": 60,
+        "c_week": 2,
+        "season_c": 120,
+        "carry": 0.9,
+        "rd_max": 200
+      },
+      "val_log_loss": 0.9675857974748727
+    },
+    "dixon_coles": {
+      "params": {
+        "half_life_days": 180,
+        "ridge": 0.5
+      },
+      "val_log_loss": 0.9691865369359242
+    },
+    "dixon_coles_xg": {
+      "params": {
+        "half_life_days": 180,
+        "ridge": 0.5,
+        "xg_weight": 0.5
+      },
+      "val_log_loss": 0.9622866783181091
+    },
+    "ridge_gd": {
+      "params": {
+        "half_life_days": 180,
+        "ridge": 2
+      },
+      "val_log_loss": 0.9696293777225088
+    },
+    "ridge_gd_xg": {
+      "params": {
+        "half_life_days": 365,
+        "ridge": 2,
+        "xg_weight": 0.5
+      },
+      "val_log_loss": 0.969454384445449
+    }
+  },
+  "female": {
+    "elo_none": {
+      "params": {
+        "k": 80,
+        "hfa": 50,
+        "carry": 1.0
+      },
+      "val_log_loss": 0.9309163004834394
+    },
+    "elo_sqrt": {
+      "params": {
+        "k": 80,
+        "hfa": 70,
+        "carry": 1.0
+      },
+      "val_log_loss": 0.9237941278413799
+    },
+    "elo_wfe_autocorr": {
+      "params": {
+        "k": 60,
+        "hfa": 50,
+        "carry": 1.0
+      },
+      "val_log_loss": 0.9251744927131702
+    },
+    "elo_xg": {
+      "params": {
+        "k": 60,
+        "hfa": 30,
+        "carry": 0.9,
+        "xg_weight": 0.25,
+        "xg_c": 0.6
+      },
+      "val_log_loss": 0.9135041700751916
+    },
+    "pi": {
+      "params": {
+        "lam": 0.1,
+        "gamma": 0.5,
+        "c": 5.0,
+        "carry": 0.95
+      },
+      "val_log_loss": 0.9258848279089569
+    },
+    "glicko": {
+      "params": {
+        "hfa": 40,
+        "c_week": 2,
+        "season_c": 120,
+        "carry": 0.9,
+        "rd_max": 300
+      },
+      "val_log_loss": 0.9215588857265749
+    },
+    "dixon_coles": {
+      "params": {
+        "half_life_days": 365,
+        "ridge": 0.5
+      },
+      "val_log_loss": 0.9139437616866464
+    },
+    "dixon_coles_xg": {
+      "params": {
+        "half_life_days": 180,
+        "ridge": 0.5,
+        "xg_weight": 0.5
+      },
+      "val_log_loss": 0.9058599818956242
+    },
+    "ridge_gd": {
+      "params": {
+        "half_life_days": 365,
+        "ridge": 2
+      },
+      "val_log_loss": 0.9192371357075562
+    },
+    "ridge_gd_xg": {
+      "params": {
+        "half_life_days": 365,
+        "ridge": 2,
+        "xg_weight": 1.0
+      },
+      "val_log_loss": 0.9103766017675298
+    }
+  }
+}

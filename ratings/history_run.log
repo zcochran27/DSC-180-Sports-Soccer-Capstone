@@ -1,0 +1,59 @@
+rating elo_none
+rating elo_sqrt
+rating elo_wfe_autocorr
+rating elo_xg
+rating pi
+rating glicko
+rating dixon_coles
+rating dixon_coles_xg
+rating ridge_gd
+rating ridge_gd_xg
+ensemble OLS weights: {'elo_none': np.float64(-0.394), 'elo_sqrt': np.float64(0.596), 'elo_wfe_autocorr': np.float64(-0.317), 'elo_xg': np.float64(0.201), 'pi': np.float64(-0.004), 'glicko': np.float64(0.193), 'dixon_coles': np.float64(0.119), 'dixon_coles_xg': np.float64(0.409), 'ridge_gd': np.float64(-0.344), 'ridge_gd_xg': np.float64(0.465)}
+ref                rpi shortlistr                   usc_final                         usc_wk11                              
+year              2026       2023  2024  2025  2026      2021  2022  2023  2024  2025     2021  2022  2023  2024  2025  2026
+model                                                                                                                       
+dixon_coles       0.92       0.86  0.87  0.89  0.87      0.73  0.29  0.22  0.32  0.25     0.66  0.14  0.43  0.77  0.31  0.57
+dixon_coles_xg    0.92       0.88  0.90  0.90  0.89      0.79  0.23  0.23  0.21  0.32     0.65  0.21  0.38  0.67  0.18  0.70
+elo_none          0.93       0.85  0.91  0.91  0.87      0.77  0.65  0.64  0.60  0.54     0.66  0.26  0.55  0.77  0.67  0.61
+elo_sqrt          0.93       0.88  0.93  0.93  0.90      0.84  0.67  0.67  0.54  0.58     0.65  0.29  0.52  0.88  0.74  0.67
+elo_wfe_autocorr  0.93       0.87  0.91  0.91  0.88      0.85  0.66  0.65  0.47  0.47     0.66  0.26  0.53  0.81  0.72  0.55
+elo_xg            0.91       0.91  0.93  0.93  0.91      0.81  0.58  0.38  0.28  0.42     0.68  0.26  0.37  0.74  0.35  0.66
+ensemble_mean     0.94       0.89  0.92  0.92  0.90      0.88  0.64  0.47  0.42  0.46     0.70  0.35  0.48  0.83  0.54  0.70
+ensemble_ols      0.92       0.89  0.91  0.91  0.91      0.83  0.42  0.31  0.22  0.35     0.66  0.25  0.42  0.68  0.24  0.70
+glicko            0.94       0.87  0.90  0.91  0.88      0.73  0.60  0.57  0.34  0.46     0.70  0.40  0.65  0.70  0.70  0.70
+pi                0.92       0.88  0.93  0.93  0.90      0.81  0.62  0.41  0.34  0.55     0.54  0.23  0.46  0.66  0.47  0.70
+ridge_gd          0.92       0.89  0.90  0.92  0.90      0.88  0.47  0.34  0.26  0.47     0.62  0.39  0.33  0.61  0.39  0.47
+ridge_gd_xg       0.90       0.84  0.85  0.85  0.85      0.84  0.27  0.40  0.02  0.35     0.57  0.26  0.40  0.49  0.12  0.60
+
+mean spearman by model/ref:
+ref                 rpi  shortlistr  usc_final  usc_wk11
+model                                                   
+dixon_coles       0.922       0.871      0.360     0.478
+dixon_coles_xg    0.916       0.890      0.356     0.465
+elo_none          0.930       0.884      0.640     0.585
+elo_sqrt          0.929       0.909      0.660     0.623
+elo_wfe_autocorr  0.926       0.891      0.620     0.588
+elo_xg            0.911       0.920      0.495     0.511
+ensemble_mean     0.935       0.909      0.574     0.601
+ensemble_ols      0.920       0.904      0.428     0.491
+glicko            0.943       0.889      0.539     0.643
+pi                0.917       0.910      0.546     0.511
+ridge_gd          0.924       0.903      0.483     0.470
+ridge_gd_xg       0.899       0.848      0.377     0.406
+       ref  year  matched  ref_teams                                                                                                      unmatched
+shortlistr  2023      199        203                                               Saint Francis;Sacred Heart;UT Rio Grande Valley;Western Illinois
+shortlistr  2024      201        204                                                                Sacred Heart;Saint Francis;UT Rio Grande Valley
+shortlistr  2025      202        204                                                                                     Sacred Heart;Saint Francis
+shortlistr  2026      198        199                                                                                                   Sacred Heart
+       rpi  2026      203        213 Sacred Heart;Boston U.;ETSU;FGCU;LMU (CA);UIW;Houston Christian;St. Thomas (MN);Saint Mary's (CA);Western Ill.
+ usc_final  2021       25         25                                                                                                               
+  usc_wk11  2021       25         25                                                                                                               
+ usc_final  2022       25         25                                                                                                               
+  usc_wk11  2022       25         25                                                                                                               
+ usc_final  2023       25         25                                                                                                               
+  usc_wk11  2023       25         25                                                                                                               
+ usc_final  2024       25         25                                                                                                               
+  usc_wk11  2024       25         25                                                                                                               
+ usc_final  2025       25         25                                                                                                               
+  usc_wk11  2025       26         26                                                                                                               
+  usc_wk11  2026       25         25                                                                                                               

@@ -13,7 +13,7 @@ so we trust the raw number less and lean on the group average more:
 We pick k per stat from the data (see estimate_k).
 
 Run a quick self-check (needs .env with MotherDuck credentials):
-    python -m analysis.minutes_shrinkage
+    python -m low_minute_player_analysis.minutes_shrinkage
 """
 from __future__ import annotations
 

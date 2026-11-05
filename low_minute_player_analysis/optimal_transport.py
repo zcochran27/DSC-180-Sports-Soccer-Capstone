@@ -17,7 +17,7 @@ Caveat: the 1-D version never changes how players are ordered within a group; it
 the values. Only the multi-stat version can change the order.
 
 Run a quick self-check (needs .env with MotherDuck credentials):
-    python -m analysis.optimal_transport
+    python -m low_minute_player_analysis.optimal_transport
 """
 from __future__ import annotations
 

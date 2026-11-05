@@ -14,7 +14,7 @@ How we score a method ("next-season stability"):
 A better estimate of "true ability" should predict next season better than the raw per-90.
 
 Usage:
-    from analysis import common
+    from low_minute_player_analysis import common
     con = common.connect()
     terms = common.load_player_terms(con, gender="female", role="FW")
 """

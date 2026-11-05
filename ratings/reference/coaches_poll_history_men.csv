@@ -1,0 +1,252 @@
+year,poll,rank,school
+2021,wk11,1,Oregon State
+2021,wk11,2,Tulsa
+2021,wk11,3,Washington
+2021,wk11,4,Marshall
+2021,wk11,5,Pittsburgh
+2021,wk11,6,New Hampshire
+2021,wk11,7,Georgetown
+2021,wk11,8,Saint Louis
+2021,wk11,9,Clemson
+2021,wk11,10,Missouri State
+2021,wk11,11,Duke
+2021,wk11,12,Maryland
+2021,wk11,13,Hofstra
+2021,wk11,14,FIU
+2021,wk11,15,Kentucky
+2021,wk11,16,Santa Clara
+2021,wk11,17,Indiana
+2021,wk11,18,Providence
+2021,wk11,19,NIU
+2021,wk11,20,Notre Dame
+2021,wk11,21,West Virginia
+2021,wk11,22,UCLA
+2021,wk11,23,North Carolina
+2021,wk11,24,Penn State
+2021,wk11,25,Grand Canyon
+2021,final,1,Clemson
+2021,final,2,Washington
+2021,final,3,Georgetown
+2021,final,4,Notre Dame
+2021,final,5,Oregon State
+2021,final,6,Pittsburgh
+2021,final,7,Saint Louis
+2021,final,8,West Virginia
+2021,final,9,New Hampshire
+2021,final,10,Tulsa
+2021,final,11,Kentucky
+2021,final,12,Duke
+2021,final,13,Hofstra
+2021,final,14,Indiana
+2021,final,15,Marshall
+2021,final,16,Providence
+2021,final,17,Wake Forest
+2021,final,18,FIU
+2021,final,19,Virginia Tech
+2021,final,20,Santa Clara
+2021,final,21,NIU
+2021,final,22,Missouri State
+2021,final,23,Maryland
+2021,final,24,Penn State
+2021,final,25,UCLA
+2022,wk11,1,Washington
+2022,wk11,2,Kentucky
+2022,wk11,3,Syracuse
+2022,wk11,4,Duke
+2022,wk11,5,Stanford
+2022,wk11,6,Maryland
+2022,wk11,7,UNC Greensboro
+2022,wk11,8,Vermont
+2022,wk11,9,Denver
+2022,wk11,9,Marshall
+2022,wk11,11,Virginia
+2022,wk11,12,Lipscomb
+2022,wk11,13,SMU
+2022,wk11,14,Georgetown
+2022,wk11,15,Akron
+2022,wk11,16,Ohio State
+2022,wk11,17,Cornell
+2022,wk11,18,Clemson
+2022,wk11,19,Portland
+2022,wk11,20,Wake Forest
+2022,wk11,21,Saint Louis
+2022,wk11,22,New Hampshire
+2022,wk11,23,Penn
+2022,wk11,24,Missouri State
+2022,wk11,25,FIU
+2022,final,1,Syracuse
+2022,final,2,Indiana
+2022,final,3,Duke
+2022,final,4,Vermont
+2022,final,5,UNC Greensboro
+2022,final,6,Kentucky
+2022,final,7,Stanford
+2022,final,8,Pittsburgh
+2022,final,9,Creighton
+2022,final,10,Portland
+2022,final,11,Washington
+2022,final,12,Marshall
+2022,final,13,Clemson
+2022,final,14,Cornell
+2022,final,15,Tulsa
+2022,final,16,Virginia
+2022,final,17,Maryland
+2022,final,18,SMU
+2022,final,19,FIU
+2022,final,20,Georgetown
+2022,final,21,New Hampshire
+2022,final,22,Lipscomb
+2022,final,23,Akron
+2022,final,24,Wake Forest
+2022,final,25,Saint Louis
+2023,wk11,1,Marshall
+2023,wk11,2,SMU
+2023,wk11,3,Georgetown
+2023,wk11,4,Notre Dame
+2023,wk11,5,West Virginia
+2023,wk11,6,Wake Forest
+2023,wk11,7,North Carolina
+2023,wk11,8,Duke
+2023,wk11,9,Seattle
+2023,wk11,10,New Hampshire
+2023,wk11,11,Virginia
+2023,wk11,12,UCF
+2023,wk11,13,Portland
+2023,wk11,14,Clemson
+2023,wk11,15,Missouri State
+2023,wk11,16,Western Michigan
+2023,wk11,17,Hofstra
+2023,wk11,18,Syracuse
+2023,wk11,19,Bryant
+2023,wk11,20,Louisville
+2023,wk11,21,UCLA
+2023,wk11,22,Stanford
+2023,wk11,23,Denver
+2023,wk11,24,Southern Illinois Edwardsville
+2023,wk11,25,Loyola Marymount
+2023,final,1,Clemson
+2023,final,2,Notre Dame
+2023,final,3,West Virginia
+2023,final,4,Oregon State
+2023,final,5,Stanford
+2023,final,6,North Carolina
+2023,final,7,Indiana
+2023,final,8,Marshall
+2023,final,9,New Hampshire
+2023,final,10,SMU
+2023,final,11,Loyola Marymount
+2023,final,12,Western Michigan
+2023,final,13,Virginia
+2023,final,14,Vermont
+2023,final,15,Wake Forest
+2023,final,16,Georgetown
+2023,final,17,Hofstra
+2023,final,18,James Madison
+2023,final,19,UCF
+2023,final,20,Duke
+2023,final,21,UCLA
+2023,final,22,Portland
+2023,final,23,Seattle
+2023,final,24,Louisville
+2023,final,25,Syracuse
+2024,wk11,1,Ohio State
+2024,wk11,2,Duke
+2024,wk11,3,San Diego
+2024,wk11,4,Denver
+2024,wk11,5,Dayton
+2024,wk11,6,Indiana
+2024,wk11,7,Clemson
+2024,wk11,8,Marshall
+2024,wk11,9,Pittsburgh
+2024,wk11,10,West Virginia
+2024,wk11,11,Missouri State
+2024,wk11,12,Penn
+2024,wk11,13,Akron
+2024,wk11,14,North Carolina
+2024,wk11,15,SMU
+2024,wk11,16,Cornell
+2024,wk11,17,Vermont
+2024,wk11,18,Hofstra
+2024,wk11,19,Washington
+2024,wk11,20,UMass
+2024,wk11,21,NC State
+2024,wk11,22,High Point
+2024,wk11,23,Western Michigan
+2024,wk11,24,Georgetown
+2024,wk11,25,Providence
+2024,final,1,Vermont
+2024,final,2,Marshall
+2024,final,3,Ohio State
+2024,final,4,Denver
+2024,final,5,SMU
+2024,final,6,Wake Forest
+2024,final,7,Pittsburgh
+2024,final,8,UMass
+2024,final,9,Clemson
+2024,final,10,San Diego
+2024,final,11,Indiana
+2024,final,12,Dayton
+2024,final,13,Stanford
+2024,final,14,NC State
+2024,final,15,Duke
+2024,final,16,West Virginia
+2024,final,17,Virginia
+2024,final,18,Kansas City
+2024,final,19,Penn
+2024,final,20,Western Michigan
+2024,final,21,Akron
+2024,final,22,Cornell
+2024,final,23,Hofstra
+2024,final,24,Missouri State
+2024,final,25,Georgetown
+2025,wk11,1,Maryland
+2025,wk11,2,Vermont
+2025,wk11,3,Princeton
+2025,wk11,4,Virginia
+2025,wk11,5,NC State
+2025,wk11,6,Bryant
+2025,wk11,7,Stanford
+2025,wk11,8,Portland
+2025,wk11,9,San Diego
+2025,wk11,10,Michigan
+2025,wk11,11,Georgetown
+2025,wk11,12,High Point
+2025,wk11,13,Oregon State
+2025,wk11,14,Furman
+2025,wk11,15,Washington
+2025,wk11,16,West Virginia
+2025,wk11,17,Marshall
+2025,wk11,18,Kentucky
+2025,wk11,19,Akron
+2025,wk11,20,UNC Greensboro
+2025,wk11,21,Seton Hall
+2025,wk11,22,Hofstra
+2025,wk11,23,Cornell
+2025,wk11,24,Saint Louis
+2025,wk11,25,Kansas City
+2025,wk11,25,Indiana
+2025,final,1,Washington
+2025,final,2,NC State
+2025,final,3,Furman
+2025,final,4,Saint Louis
+2025,final,5,Georgetown
+2025,final,6,Portland
+2025,final,7,Maryland
+2025,final,8,Princeton
+2025,final,9,Stanford
+2025,final,10,Bryant
+2025,final,11,Virginia
+2025,final,12,Akron
+2025,final,13,Vermont
+2025,final,14,UNC Greensboro
+2025,final,15,SMU
+2025,final,16,High Point
+2025,final,17,Marshall
+2025,final,18,San Diego
+2025,final,19,Oregon State
+2025,final,20,Hofstra
+2025,final,21,Grand Canyon
+2025,final,22,Indiana
+2025,final,23,West Virginia
+2025,final,24,UConn
+2025,final,25,Kansas City

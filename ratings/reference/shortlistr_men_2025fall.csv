@@ -1,0 +1,205 @@
+rank,school,strength
+1,"Washington",100
+2,"Georgetown",100
+3,"NC State",99
+4,"High Point",99
+5,"Stanford",98
+6,"Princeton",98
+7,"Cornell",97
+8,"San Diego",97
+9,"UCLA",96
+10,"Vermont",96
+11,"Portland",95
+12,"Hofstra",95
+13,"SMU",94
+14,"Akron",94
+15,"Virginia",93
+16,"West Virginia",93
+17,"Indiana",92
+18,"Maryland",92
+19,"Clemson",91
+20,"Bryant",91
+21,"Saint Louis",90
+22,"UNC Greensboro",90
+23,"Duke",89
+24,"UCF",89
+25,"Charlotte",88
+26,"Gardner-Webb",88
+27,"Denver",87
+28,"Kansas City",87
+29,"Michigan",86
+30,"Marshall",86
+31,"Seton Hall",85
+32,"Furman",85
+33,"Penn",84
+34,"Iona",84
+35,"North Carolina",83
+36,"Oregon State",83
+37,"Delaware",82
+38,"St. John's",81
+39,"Georgia Southern",81
+40,"UConn",80
+41,"Dayton",80
+42,"Fairleigh Dickinson",80
+43,"Belmont",79
+44,"California Baptist",79
+45,"Grand Canyon",78
+46,"Elon",78
+47,"Florida Atlantic",77
+48,"Fairfield",77
+49,"Evansville",76
+50,"San Jose State",76
+51,"California",75
+52,"Sacred Heart",75
+53,"Northern Illinois",74
+54,"Drake",74
+55,"Creighton",73
+56,"Campbell",73
+57,"Utah Valley",72
+58,"Cal Poly",72
+59,"Virginia Tech",71
+60,"Stony Brook",71
+61,"UC Irvine",70
+62,"North Florida",70
+63,"Missouri State",69
+64,"American",69
+65,"Davidson",68
+66,"Siena",68
+67,"Syracuse",67
+68,"Bucknell",67
+69,"Kentucky",66
+70,"San Francisco",66
+71,"Providence",65
+72,"Rhode Island",65
+73,"VCU",64
+74,"Boston University",64
+75,"Bellarmine",63
+76,"Green Bay",63
+77,"Northwestern",62
+78,"Western Michigan",62
+79,"Wisconsin",61
+80,"Harvard",61
+81,"Pittsburgh",60
+82,"Jacksonville",60
+83,"Cleveland State",60
+84,"UIC",59
+85,"UMBC",59
+86,"Xavier",58
+87,"Purdue Fort Wayne",58
+88,"FIU",57
+89,"Army",57
+90,"Old Dominion",56
+91,"UAB",56
+92,"New Hampshire",55
+93,"Marist",55
+94,"UMass",54
+95,"Fordham",54
+96,"Wake Forest",53
+97,"Marquette",53
+98,"Albany",52
+99,"UC Santa Barbara",52
+100,"Michigan State",51
+101,"Charleston",51
+102,"Rutgers",50
+103,"South Florida",50
+104,"Penn State",49
+105,"Lafayette",49
+106,"UC Davis",48
+107,"Robert Morris",48
+108,"Brown",47
+109,"Saint Joseph's",47
+110,"Loyola Marymount",46
+111,"George Mason",46
+112,"Duquesne",45
+113,"Cal State Fullerton",45
+114,"Notre Dame",44
+115,"La Salle",44
+116,"UNC Wilmington",43
+117,"IUPUI",43
+118,"Lehigh",42
+119,"LIU",42
+120,"Columbia",41
+121,"Stetson",41
+122,"Louisville",40
+123,"Niagara",40
+124,"Milwaukee",40
+125,"Boston College",39
+126,"UC Riverside",39
+127,"Ohio State",38
+128,"Santa Clara",38
+129,"St. Thomas",37
+130,"UMass Lowell",37
+131,"Utah Tech",36
+132,"UNC Asheville",36
+133,"Drexel",35
+134,"USC Upstate",35
+135,"Villanova",34
+136,"Florida Gulf Coast",34
+137,"Quinnipiac",33
+138,"Saint Francis",33
+139,"Loyola Chicago",32
+140,"Queens",32
+141,"Gonzaga",31
+142,"Northeastern",31
+143,"Saint Mary's",30
+144,"Memphis",30
+145,"San Diego State",29
+146,"Oakland",29
+147,"South Carolina",28
+148,"Cal State Northridge",28
+149,"UC San Diego",27
+150,"Merrimack",27
+151,"Mercer",26
+152,"Stonehill",26
+153,"Bowling Green",25
+154,"Colgate",25
+155,"Coastal Carolina",24
+156,"Holy Cross",24
+157,"Oral Roberts",23
+158,"Presbyterian",23
+159,"DePaul",22
+160,"Georgia State",22
+161,"Yale",21
+162,"Seattle",21
+163,"Butler",20
+164,"Omaha",20
+165,"Le Moyne",20
+166,"UNLV",19
+167,"Wofford",19
+168,"Tulsa",18
+169,"Lipscomb",18
+170,"NJIT",17
+171,"East Tennessee State",17
+172,"St. Bonaventure",16
+173,"Longwood",16
+174,"George Washington",15
+175,"Mercyhurst",15
+176,"Northern Kentucky",14
+177,"New Haven",14
+178,"Loyola Maryland",13
+179,"Saint Peter's",13
+180,"Dartmouth",12
+181,"Cal State Bakersfield",12
+182,"Rider",11
+183,"Detroit Mercy",11
+184,"James Madison",10
+185,"Navy",10
+186,"Monmouth",9
+187,"Manhattan",9
+188,"Pacific",8
+189,"Wright State",8
+190,"William & Mary",7
+191,"Mount St. Mary's",7
+192,"Sacramento State",6
+193,"Howard",6
+194,"Bradley",5
+195,"Binghamton",5
+196,"Central Arkansas",4
+197,"Canisius",4
+198,"Air Force",3
+199,"Radford",3
+200,"Temple",2
+201,"Winthrop",2
+202,"VMI",1
+203,"Central Connecticut",1
+204,"Chicago State",0

@@ -16,7 +16,7 @@ Steps:
     cross_fitted_predict wraps all three so no player ever helps predict themselves.
 
 Run a quick self-check (needs .env with MotherDuck credentials):
-    python -m analysis.similar_player_prediction
+    python -m low_minute_player_analysis.similar_player_prediction
 """
 from __future__ import annotations
 

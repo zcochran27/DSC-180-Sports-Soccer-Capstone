@@ -8,9 +8,10 @@ and rolls season stats up across competitions by year and term (Fall / Spring).
 - `wyscout/schema.sql` - idempotent DDL for schema `wyscout`
 - `wyscout/load.py` - chunked, parallel, resumable loader
 - `wyscout/rollup.py` - cross-competition season rollup into `team_term_stats` / `player_term_stats`
-- `analysis/` - three ways to estimate player rates from small minute samples, scored on next-season stability
+- `low_minute_player_analysis/` - everything for the low-minutes player work: three ways to estimate player rates from small minute samples, scored on next-season stability
   - `common.py` (data loading, per-90, scoring), `minutes_shrinkage.py`, `optimal_transport.py`, `similar_player_prediction.py`
-- `notebooks/` - one notebook per method (`01`-`03`) plus `04_compare_methods.ipynb`
+  - `notebooks/` - one notebook per method (`01`-`03`) plus `04_compare_methods.ipynb`
+- `ratings/` - team rating systems (Elo variants, pi-ratings, Glicko, Dixon-Coles, ridge) with tuning, evaluation and validation against published rankings; see `ratings/README.md`
 
 ## Setup
     pip install -r requirements.txt
@@ -23,7 +24,11 @@ and rolls season stats up across competitions by year and term (Fall / Spring).
 Loads are resumable via the `ingest_log` table; `--force` re-fetches, `--season-ids` / `--team-id` limit scope.
 
 ## Small-sample analysis
-    python -m analysis.minutes_shrinkage            # quick score table for each method
-    python -m analysis.optimal_transport
-    python -m analysis.similar_player_prediction
-Then open the notebooks in `notebooks/` (run from that folder). Keep `duckdb<2`: MotherDuck does not support DuckDB 2.x yet.
+    python -m low_minute_player_analysis.minutes_shrinkage            # quick score table for each method
+    python -m low_minute_player_analysis.optimal_transport
+    python -m low_minute_player_analysis.similar_player_prediction
+Then open the notebooks in `low_minute_player_analysis/notebooks/` (run from that folder). Keep `duckdb<2`: MotherDuck does not support DuckDB 2.x yet.
+
+## Team ratings
+    python -m ratings.evaluate --gender male        # held-out comparison of all rating models
+    python -m ratings.matchup --gender male --model elo_sqrt --home "Georgetown Hoyas" --away "UCLA Bruins"
