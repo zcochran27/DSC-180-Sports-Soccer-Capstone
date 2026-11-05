@@ -8,6 +8,7 @@ and rolls season stats up across competitions by year and term (Fall / Spring).
 - `wyscout/schema.sql` - idempotent DDL for schema `wyscout`
 - `wyscout/load.py` - loader that fetches in parallel and can be re-run without duplicating data
 - `wyscout/rollup.py` - cross-competition season rollup into `team_term_stats` / `player_term_stats`
+- `wyscout/derived.py` - engineered stats (np_xg, turnover/style shares, team-vs-opponent shares) added during the rollup; documented in `wyscout/DERIVED_STATS.md` and in `stat_formulas` (`origin = 'derived'`)
 - `low_minute_player_analysis/` - everything for the low-minutes player work: three ways to estimate player rates from small minute samples, scored on next-season stability
   - `common.py` (data loading, per-90, scoring), `minutes_shrinkage.py`, `optimal_transport.py`, `similar_player_prediction.py`
   - `notebooks/` - one notebook per method (`01`-`03`) plus `04_compare_methods.ipynb`

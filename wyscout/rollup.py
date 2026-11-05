@@ -22,6 +22,9 @@ How rows are combined (columns come from the API as total_*, average_*, percent_
              back to a mean weighted by its own denominator (matches played if unknown). Chosen methods are written to
              wyscout.stat_formulas so you can see which was used for each column.
 
+Derived stats (np_xg, turnover/style shares, team-vs-opponent shares, ...) are added after the
+rollup by wyscout.derived; see wyscout/DERIVED_STATS.md and the origin='derived' rows in stat_formulas.
+
 Season name -> (year, term): "2025 Fall", "Spring 2021" use the name. Plain years ("2019") are
 classed by the season's dates (ends by June = Spring, starts July or later = Fall, else Full).
 "CANCELLED" seasons are dropped; "Friendlies" seasons are dropped unless --include-friendlies.
@@ -34,6 +37,7 @@ import re
 import numpy as np
 import pandas as pd
 
+from . import derived as D
 from . import load as L
 
 # High-volume stats used to recover each row's exposure (the divisor behind the averages).
@@ -232,6 +236,11 @@ def run_scope(con, scope: str, include_friendlies: bool, source: str = "season")
     L.upsert(con, "stat_formulas", pd.DataFrame(formula_rows))
     methods = pd.Series([f["method"] for f in formulas.values()]).value_counts().to_dict()
     result = rollup(df, key, formulas)
+    result, derived_rows = D.add_derived(result, scope)  # engineered stats, see wyscout/DERIVED_STATS.md
+    if scope == "team":
+        result, rel_rows = D.add_relative_team(con, result, include_friendlies)
+        derived_rows += rel_rows
+    L.upsert(con, "stat_formulas", pd.DataFrame(derived_rows))
     if from_matches:
         result["n_matches"] = df.groupby([key, "year", "term"], sort=False)["match_id"].nunique()             .reindex(pd.MultiIndex.from_frame(result[[key, "year", "term"]])).to_numpy()
         con.execute(f"DELETE FROM wyscout.{out_table}")  # fully rebuilt from match rows
