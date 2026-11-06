@@ -13,6 +13,7 @@ and rolls season stats up across competitions by year and term (Fall / Spring).
   - `common.py` (data loading, per-90, scoring), `minutes_shrinkage.py`, `optimal_transport.py`, `similar_player_prediction.py`
   - `notebooks/` - one notebook per method (`01`-`03`) plus `04_compare_methods.ipynb`
 - `ratings/` - team rating systems (Elo variants, pi-ratings, Glicko, Dixon-Coles, ridge) with tuning, evaluation and comparison to published rankings; see `ratings/README.md`
+- `possession_analysis/` - fixed 50/50, learned-exponent and context-model possession adjustments, with chronological evaluation and a notebook; see `possession_analysis/README.md`
 
 ## Setup
     pip install -r requirements.txt
@@ -33,3 +34,7 @@ Then open the notebooks in `low_minute_player_analysis/notebooks/` (run from tha
 ## Team ratings
     python -m ratings.evaluate --gender male        # held-out comparison of all rating models
     python -m ratings.matchup --gender male --model elo_sqrt --home "Georgetown Hoyas" --away "UCLA Bruins"
+
+## Possession adjustment
+    python -m possession_analysis.normalize --gender female --year 2025
+Then open `possession_analysis/notebooks/01_possession_normalization.ipynb`.
