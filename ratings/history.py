@@ -1,6 +1,6 @@
 """Compare our men's D1 team rankings with published rankings over several years (2021-2026).
 
-    python -m ratings.history            # writes ratings/history_results.csv
+    results = run()      # from a notebook; writes ratings/history_results.csv (takes a while)
 
 Published rankings (saved in ratings/reference/): Shortlistr Team Strength (2023-26), United
 Soccer Coaches polls (Week 11, the last regular-season poll, and the Final poll after the
@@ -9,9 +9,6 @@ tournament; 2026 only has Week 10) and the 2026 NCAA RPI.
 Each model goes through all matches once. We save its team strengths on the date of each
 published ranking, so the model only uses games that had been played by then.
 """
-from __future__ import annotations
-
-import argparse
 from pathlib import Path
 
 import pandas as pd
@@ -20,6 +17,7 @@ from scipy.stats import kendalltau, spearmanr
 from ratings.compare_rpi import match_teams
 from ratings.data import connect, load_matches
 from ratings.evaluate import default_models, evaluate
+from ratings import base
 from ratings.matchup import strength
 from ratings.specs import SPECS, build
 from ratings.tune import load_best
@@ -32,7 +30,7 @@ WEEK_11_DATES = {2021: "2021-11-09", 2022: "2022-11-08", 2023: "2023-11-06",
                  2024: "2024-11-05", 2025: "2025-11-04"}
 
 
-def load_references() -> list[dict]:
+def load_references():
     """Every published ranking as {"ref", "year", "as_of", "df"}; df has columns rank and school."""
     refs = []
 
@@ -56,7 +54,16 @@ def load_references() -> list[dict]:
     return refs
 
 
-def strengths_on_each_date(model_name: str, matches: pd.DataFrame, snapshots: list[tuple]) -> dict:
+def take_snapshot(model, matches_by_year, results, date, key, year):
+    """Record every team's strength on `date`, for the teams that played in `year` before that date."""
+    year_matches = matches_by_year[year]
+    played_before = year_matches[year_matches["date"] < date]
+    team_ids = sorted(set(played_before["home"]) | set(played_before["away"]))
+    results[key] = pd.DataFrame({"team_id": team_ids,
+                                 "strength": [strength(model, team, date) for team in team_ids]})
+
+
+def strengths_on_each_date(model_name, matches, snapshots):
     """Go through all matches once and record team strengths on each requested date.
 
     snapshots is a list of (key, year, as_of_date). Returns {key: DataFrame(team_id, strength)},
@@ -70,28 +77,23 @@ def strengths_on_each_date(model_name: str, matches: pd.DataFrame, snapshots: li
                       for key, year, as_of in snapshots), key=lambda s: s[0])
     results = {}
 
-    def take_snapshot(date, key, year):
-        played_before = matches_by_year[year][matches_by_year[year]["date"] < date]
-        team_ids = sorted(set(played_before["home"]) | set(played_before["away"]))
-        results[key] = pd.DataFrame({"team_id": team_ids,
-                                     "strength": [strength(model, team, date) for team in team_ids]})
-
     last_year = None
     for match in matches.itertuples(index=False):
         while waiting and match.date >= waiting[0][0]:
-            take_snapshot(*waiting.pop(0))
+            date, key, year = waiting.pop(0)
+            take_snapshot(model, matches_by_year, results, date, key, year)
         if match.year != last_year:
-            model.start_season(match.year)
+            base.start_season(model, match.year)
             last_year = match.year
-        model.gap(match)  # some models need to see the gap before the update
-        model.update(match)
+        base.gap(model, match)   # some models need to see the gap before the update
+        base.update(model, match)
 
-    for snapshot in waiting:  # dates after the last match
-        take_snapshot(*snapshot)
+    for date, key, year in waiting:   # dates after the last match
+        take_snapshot(model, matches_by_year, results, date, key, year)
     return results
 
 
-def compare_to_reference(strengths: pd.DataFrame, reference: pd.DataFrame, school_ids: dict) -> dict:
+def compare_to_reference(strengths, reference, school_ids):
     """How closely our ranking agrees with one published ranking."""
     ours = strengths.sort_values("strength", ascending=False).reset_index(drop=True)
     ours["model_rank"] = ours.index + 1
@@ -114,7 +116,7 @@ def compare_to_reference(strengths: pd.DataFrame, reference: pd.DataFrame, schoo
     }
 
 
-def match_schools_by_year(refs: list[dict], matches: pd.DataFrame, con) -> dict:
+def match_schools_by_year(refs, matches, con):
     """{year: {school name: team_id}}, matching only teams that played that year."""
     teams = con.execute("SELECT team_id, name FROM wyscout.teams WHERE gender = 'male'").df()
     school_ids = {}
@@ -128,7 +130,7 @@ def match_schools_by_year(refs: list[dict], matches: pd.DataFrame, con) -> dict:
     return school_ids
 
 
-def make_ensembles(all_strengths: dict, matches: pd.DataFrame) -> dict:
+def make_ensembles(all_strengths, matches):
     """Combine models into two extra "models": a weighted blend and a plain average.
 
     Strengths are standardised within each snapshot first. Blend weights come from the
@@ -151,7 +153,7 @@ def make_ensembles(all_strengths: dict, matches: pd.DataFrame) -> dict:
     return ensembles
 
 
-def run(models=None, min_year: int = 2021) -> pd.DataFrame:
+def run(models=None, min_year=2021):
     matches = load_matches("male")
     refs = [ref for ref in load_references() if ref["year"] >= min_year]
     school_ids = match_schools_by_year(refs, matches, connect())
@@ -174,21 +176,3 @@ def run(models=None, min_year: int = 2021) -> pd.DataFrame:
     results.to_csv(OUTPUT_PATH, index=False)
     return results
 
-
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", action="append", help="can be given more than once; default: all")
-    parser.add_argument("--min-year", type=int, default=2021)
-    args = parser.parse_args()
-
-    results = run(args.model, args.min_year)
-    pd.set_option("display.width", 220)
-    print(results.pivot_table(index="model", columns=["ref", "year"], values="spearman").round(2).to_string())
-    print("\nmean spearman by model/ref:")
-    print(results.pivot_table(index="model", columns="ref", values="spearman").round(3).to_string())
-    unmatched = results.drop_duplicates(["ref", "year"])[["ref", "year", "matched", "ref_teams", "unmatched"]]
-    print(unmatched.to_string(index=False))
-
-
-if __name__ == "__main__":
-    main()

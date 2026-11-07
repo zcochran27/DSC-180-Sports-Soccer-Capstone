@@ -1,15 +1,12 @@
 """Compare our team rankings with published men's D1 rankings (NCAA RPI and Shortlistr).
 
-    python -m ratings.compare_rpi --model elo_xg --model dixon_coles_xg --as-of 2026-11-03
+    table, summary = compare("elo_xg", "2026-11-03", 2026, ref="rpi")
 
 The RPI is from https://www.ncaa.com/rankings/soccer-men/d1/ncaa-mens-soccer-rpi (games through
 Nov. 3, 2026). Both files are saved in ratings/reference/. Our ratings only use matches up to
---as-of. School names are matched to Wyscout team names; schools that cannot be matched are
-printed.
+`as_of`. School names are matched to Wyscout team names; schools that cannot be matched are
+listed in the table (team_id is empty).
 """
-from __future__ import annotations
-
-import argparse
 import re
 from pathlib import Path
 
@@ -24,7 +21,6 @@ REFERENCES = {  # name -> csv file with columns: rank, school
     "rpi": REFERENCE_DIR / "ncaa_rpi_men_2026-11-03.csv",
     "shortlistr": REFERENCE_DIR / "shortlistr_men_2026fall.csv",
 }
-REFS = REFERENCES  # the notebook imports this name
 
 # Short forms that appear in school names. Expanded on both sides before comparing.
 ABBREVIATIONS = {"st": "state", "fla": "florida", "ga": "georgia", "col": "college", "ky": "kentucky",
@@ -80,7 +76,7 @@ ALIASES = {
 }
 
 
-def normalize(name: str, expand: bool = True) -> str:
+def normalize(name, expand=True):
     """Lowercase a school name, drop punctuation, and (optionally) spell out abbreviations."""
     name = name.lower().replace("&", "and")
     name = re.sub(r"[().'`]", "", name)
@@ -91,7 +87,7 @@ def normalize(name: str, expand: bool = True) -> str:
     return " ".join(words)
 
 
-def match_teams(schools: list[str], teams: pd.DataFrame) -> dict:
+def match_teams(schools, teams):
     """Match each school name to a team id. Returns {school: team_id}; unmatched schools are left out.
 
     A Wyscout team is a candidate when its name equals the school name or starts with it
@@ -112,8 +108,7 @@ def match_teams(schools: list[str], teams: pd.DataFrame) -> dict:
     return matched
 
 
-def compare(model_name: str, as_of: str, year: int, matches: pd.DataFrame | None = None, con=None,
-            ref: str = "rpi"):
+def compare(model_name, as_of, year, matches=None, con=None, ref="rpi"):
     """Rank teams with `model_name` using matches up to `as_of` and compare with the reference.
 
     Returns (table of reference rank vs our rank, dict of summary numbers).
@@ -155,27 +150,3 @@ def compare(model_name: str, as_of: str, year: int, matches: pd.DataFrame | None
     }
     return table, summary
 
-
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", action="append", help="can be given more than once")
-    parser.add_argument("--as-of", default="2026-11-03")
-    parser.add_argument("--year", type=int, default=2026, help="season year of the reference ranking")
-    parser.add_argument("--ref", action="append", choices=list(REFERENCES), help="default: all")
-    args = parser.parse_args()
-
-    pd.set_option("display.width", 200)
-    matches = load_matches("male")
-    print("data through", matches["date"].max())
-
-    summaries = []
-    for ref in args.ref or list(REFERENCES):
-        for model_name in args.model or ["elo_xg", "dixon_coles_xg"]:
-            table, summary = compare(model_name, args.as_of, args.year, matches, ref=ref)
-            summaries.append(summary)
-        print(f"[{ref}] unmatched:", table.loc[table.team_id.isna(), "school"].tolist())
-    print(pd.DataFrame(summaries).round(3).to_string(index=False))
-
-
-if __name__ == "__main__":
-    main()

@@ -1,7 +1,5 @@
 """Random-search hyperparameter tuning for every rating model.
 
-    python -m ratings.tune --gender male --gender female
-
 How a setting is judged (the test season is never touched):
     1. Rate all matches up to and including the validation season, one at a time in date order.
     2. Fit the gap -> outcome mapping on the seasons before the validation season
@@ -9,24 +7,25 @@ How a setting is judged (the test season is never touched):
     3. Score the validation season by log loss.
 
 The best settings per gender are saved to ratings/best_params.json.
-"""
-from __future__ import annotations
 
-import argparse
+From a notebook:
+    tune.run_tuning(["male", "female"])          # all models (takes a while); saves best_params.json
+    tune.load_best("male")                       # read the saved settings
+"""
 import json
 import random
 from pathlib import Path
 
 import pandas as pd
 
-from ratings.base import OutcomeMapper, score, walk_forward
+from ratings import base
 from ratings.data import load_matches
 from ratings.specs import BATCH, SPECS, build
 
 PARAMS_PATH = Path(__file__).with_name("best_params.json")
 
 
-def split_seasons(matches: pd.DataFrame, test_seasons: int):
+def split_seasons(matches, test_seasons):
     """Returns (fit_years, validation_year, matches up to and including the validation year).
 
     The newest `test_seasons` seasons are held out and never used. The one before them is the
@@ -40,19 +39,19 @@ def split_seasons(matches: pd.DataFrame, test_seasons: int):
     return fit_years, validation_year, matches[matches["year"] <= validation_year]
 
 
-def validation_log_loss(name, params, matches, fit_years, validation_year) -> float:
+def validation_log_loss(name, params, matches, fit_years, validation_year):
     """Log loss on the validation season for one model with one set of parameters."""
     model = build(name, params)
     if name in BATCH:
-        model.refit_days = 28  # refit less often so the search stays fast
-    predictions = walk_forward(model, matches)
+        model["refit_days"] = 28   # refit less often so the search stays fast
+    predictions = base.walk_forward(model, matches)
     fit_rows = predictions[predictions["year"].isin(fit_years)]
     validation_rows = predictions[predictions["year"] == validation_year]
-    mapper = OutcomeMapper().fit(fit_rows["gap"], fit_rows["hg"], fit_rows["ag"])
-    return score(validation_rows, mapper)["log_loss"]
+    mapper = base.fit_outcome_mapper(fit_rows["gap"], fit_rows["hg"], fit_rows["ag"])
+    return base.score(validation_rows, mapper)["log_loss"]
 
 
-def sample_params(space: dict, n: int, rng: random.Random) -> list[dict]:
+def sample_params(space, n, rng):
     """Pick up to n different random parameter combinations from the search space."""
     total_combinations = 1
     for values in space.values():
@@ -69,7 +68,7 @@ def sample_params(space: dict, n: int, rng: random.Random) -> list[dict]:
     return chosen
 
 
-def tune(gender: str, test_seasons=1, n_online=40, n_batch=8, seed=0, only=None) -> dict:
+def tune(gender, test_seasons=1, n_online=40, n_batch=8, seed=0, only=None):
     """Random search for every model. Returns {model: {"params": ..., "val_log_loss": ...}}."""
     all_matches = load_matches(gender)
     fit_years, validation_year, matches = split_seasons(all_matches, test_seasons)
@@ -95,28 +94,22 @@ def tune(gender: str, test_seasons=1, n_online=40, n_batch=8, seed=0, only=None)
     return best
 
 
-def load_best(gender: str) -> dict:
-    """Tuned parameters saved by tune.py for this gender ({} if tuning has not been run)."""
+def load_best(gender):
+    """Tuned parameters saved by run_tuning for this gender ({} if tuning has not been run)."""
     if PARAMS_PATH.exists():
         return json.loads(PARAMS_PATH.read_text()).get(gender, {})
     return {}
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--gender", action="append", choices=["male", "female"])
-    parser.add_argument("--test-seasons", type=int, default=1)
-    parser.add_argument("--n-online", type=int, default=40, help="settings to try for each Elo/Pi/Glicko model")
-    parser.add_argument("--n-batch", type=int, default=8, help="settings to try for each batch model")
-    parser.add_argument("--only", nargs="*", help="tune only these models")
-    args = parser.parse_args()
+def run_tuning(genders=("male", "female"), test_seasons=1, n_online=40, n_batch=8, only=None):
+    """Tune every model for each gender and save the best settings to best_params.json.
 
+    n_online  settings to try for each Elo / Pi / Glicko model.   n_batch  settings for each batch model.
+    only      list of model names to tune (default: all; other models keep their saved settings).
+    """
     saved = json.loads(PARAMS_PATH.read_text()) if PARAMS_PATH.exists() else {}
-    for gender in args.gender or ["male", "female"]:
-        new_results = tune(gender, args.test_seasons, args.n_online, args.n_batch, only=args.only)
+    for gender in genders:
+        new_results = tune(gender, test_seasons, n_online, n_batch, only=only)
         saved[gender] = {**saved.get(gender, {}), **new_results}
         PARAMS_PATH.write_text(json.dumps(saved, indent=2))
-
-
-if __name__ == "__main__":
-    main()
+    return saved

@@ -12,25 +12,23 @@ models are scored on the same footing.
 | File | Role |
 |---|---|
 | `data.py` | Loads regular-season matches (scores, team xG) from MotherDuck `wyscout.*`. Men and women are rated separately. |
-| `base.py` | `RatingModel` interface, walk-forward runner, `OutcomeMapper` (gap -> W/D/L and goal diff), scoring metrics. |
-| `models/elo.py`, `pi.py`, `glicko.py`, `batch.py` | The models. |
-| `specs.py` | List of model names, their classes and the settings tried when tuning. |
-| `tune.py` | Random-search hyperparameter tuning -> `best_params.json`, `tuning_log_<gender>.csv`. |
-| `evaluate.py` | Held-out comparison of all models (`python -m ratings.evaluate --gender male`). |
+| `base.py` | Walk-forward runner, outcome mapper (gap -> W/D/L and goal diff), scoring metrics. A model is a plain dict plus `gap` / `update` / `start_season` functions. |
+| `models/` | One file per kind of model: `elo.py`, `pi.py`, `glicko.py`, `dixon_coles.py`, `ridge_gd.py` (the last two share `batch.py`) and the `constant.py` baseline. |
+| `specs.py` | List of model names, their kinds and the settings tried when tuning. |
+| `tune.py` | Random-search hyperparameter tuning (`run_tuning`) -> `best_params.json`, `tuning_log_<gender>.csv`. |
+| `evaluate.py` | Held-out comparison of all models (`evaluate`). |
 | `matchup.py` | Fit a model on all data, rank teams, compare two opponents. |
 | `export_elo.py` | Write each team's pre-match Elo onto `wyscout.matches`. |
 | `compare_polls.py`, `compare_rpi.py`, `history.py` | Validation against published rankings (single snapshot / multi-year). |
 | `reference/` | Saved external rankings (coaches polls, NCAA RPI, Shortlistr). |
-| `team_ratings.ipynb` | Notebook with all tables and plots. |
+| `notebooks/` | Everything is run from here: `00_data_and_models`, `01_tune_models`, `02_evaluate_models`, `03_compare_teams`, `04_validate_rankings`, `05_export_elo`. The `.py` files only hold functions. |
 
-Use the chosen model:
+Use the chosen model (notebook `03_compare_teams`, or in code):
 
+```python
+model, mapper, matches = fit_final("male", "elo_sqrt")
+predict_matchup(model, mapper, home_team_id, away_team_id, neutral=False)
 ```
-python -m ratings.matchup --gender male --model elo_sqrt --home "Georgetown Hoyas" --away "UCLA Bruins"
-python -m ratings.matchup --gender male --model elo_sqrt --home "Georgetown Hoyas" --away "UCLA Bruins" --neutral
-```
-
-or in code: `fit_final(gender, "elo_sqrt")`, then `predict_matchup(model, mapper, home_id, away_id, neutral=False)`.
 
 ## Evaluation protocol
 
@@ -189,17 +187,16 @@ Per-year numbers: `history_results.csv`. Coaches-poll sources are saved in `refe
 
 ## Reproduce
 
-```
-python -m ratings.tune --gender male --gender female        # tune; writes best_params.json
-python -m ratings.evaluate --gender male                    # held-out table
-python -m ratings.history                                   # multi-year validation -> history_results.csv
-python -m ratings.compare_rpi --model elo_sqrt              # NCAA RPI / Shortlistr snapshot
-python -m pytest ratings -q                                  # tests on made-up matches
-```
+Open the notebooks in `ratings/notebooks/` and run them top to bottom. Slow steps have a switch cell (default off):
+
+* `01_tune_models`: `RUN_TUNING = True` tunes every model and rewrites `best_params.json`.
+* `02_evaluate_models`: the held-out table and plots.
+* `04_validate_rankings`: `RUN_HISTORY = True` recomputes the multi-year validation -> `history_results.csv`.
+* Tests on made-up matches: `python -m pytest ratings -q` (also run in `00_data_and_models`).
 
 ## Elo on the matches table
 
-`python -m ratings.export_elo` writes `home_team_elo` and `away_team_elo` (pre-match `elo_sqrt` rating, no
-result leakage) onto `wyscout.matches` for every played regular-season match; other matches stay NULL.
-`wyscout/load.py` reloads matches with INSERT OR REPLACE, which resets these columns, so re-run the export
-after loading matches. Use `--dry-run` to compute without writing.
+Notebook `05_export_elo` works out the pre-match `elo_sqrt` rating (no result leakage) for every played
+regular-season match; set `WRITE_TO_DATABASE = True` to write `home_team_elo` and `away_team_elo` onto
+`wyscout.matches` (other matches stay NULL). `wyscout/load.py` reloads matches with INSERT OR REPLACE,
+which resets these columns, so run the export again after loading matches.

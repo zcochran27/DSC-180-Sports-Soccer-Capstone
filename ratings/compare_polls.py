@@ -1,14 +1,11 @@
 """Compare our team rankings with the United Soccer Coaches Top 25 (saved in ratings/reference/).
 
-    python -m ratings.compare_polls --model elo_xg --model dixon_coles_xg
+From a notebook:   table, summary = compare("male", "elo_xg")
 
 Our ratings only use matches through the poll's record date (2026-10-25), so the model knows
 the same things the coaches did. The poll comes from SoccerWire's copy of the United Soccer
 Coaches polls (men's Week 10, women's Week 11).
 """
-from __future__ import annotations
-
-import argparse
 from pathlib import Path
 
 import pandas as pd
@@ -21,7 +18,7 @@ POLL_PATH = Path(__file__).parent / "reference" / "coaches_poll_2026.csv"
 AS_OF = pd.Timestamp("2026-10-25 23:59")
 
 
-def compare(gender: str, model_name: str, matches: pd.DataFrame | None = None):
+def compare(gender, model_name, matches=None):
     """Returns (table of poll rank vs our rank, dict of summary numbers)."""
     poll = pd.read_csv(POLL_PATH).query("gender == @gender")
     matches = load_matches(gender) if matches is None else matches
@@ -50,23 +47,3 @@ def compare(gender: str, model_name: str, matches: pd.DataFrame | None = None):
     }
     return table, summary
 
-
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", action="append", help="can be given more than once")
-    args = parser.parse_args()
-
-    pd.set_option("display.width", 200)
-    summaries = []
-    for gender in ("male", "female"):
-        matches = load_matches(gender)
-        for model_name in args.model or ["elo_xg", "dixon_coles_xg"]:
-            table, summary = compare(gender, model_name, matches)
-            summaries.append(summary)
-            print(f"\n== {gender} / {model_name} ==")
-            print(table[["rank", "team", "model_rank", "rank_diff", "strength"]].round(2).to_string(index=False))
-    print(pd.DataFrame(summaries).round(3).to_string(index=False))
-
-
-if __name__ == "__main__":
-    main()

@@ -1,21 +1,11 @@
 """Load matches from MotherDuck for the rating models."""
-from __future__ import annotations
-
 import os
 
 import duckdb
 import pandas as pd
 from dotenv import load_dotenv
 
-load_dotenv()  # reads MOTHERDUCK_TOKEN and MOTHERDUCK_DB from the .env file
-
-
-def connect() -> duckdb.DuckDBPyConnection:
-    """Open a MotherDuck connection."""
-    db = os.getenv("MOTHERDUCK_DB", "wyscout_dev")
-    token = os.getenv("MOTHERDUCK_TOKEN")
-    return duckdb.connect(f"md:{db}?motherduck_token={token}")
-
+load_dotenv()   # reads MOTHERDUCK_TOKEN and MOTHERDUCK_DB from the .env file
 
 MATCH_SQL = """
     SELECT m.match_id, m.date_utc AS date, st.year AS year, st.term AS term,
@@ -34,7 +24,14 @@ MATCH_SQL = """
 """
 
 
-def load_matches(gender: str, con=None) -> pd.DataFrame:
+def connect():
+    """Open a MotherDuck connection."""
+    database = os.getenv("MOTHERDUCK_DB", "wyscout_dev")
+    token = os.getenv("MOTHERDUCK_TOKEN")
+    return duckdb.connect(f"md:{database}?motherduck_token={token}")
+
+
+def load_matches(gender, con=None):
     """One row per played regular-season match, oldest first.
 
     gender is "male" or "female". Columns: home / away are team ids, hg / ag are goals,
